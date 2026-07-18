@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 
 type MataneUser = {
   id: string;
@@ -21,6 +22,7 @@ type Contact = {
   tags: string[];
   memos: Array<{ date: string; text: string }>;
   facts: string[];
+  visualTraits: string[];
   alertLevel: "normal" | "caution";
   alertSuggested: boolean;
   alertReason: string | null;
@@ -72,6 +74,8 @@ export function MataneApp() {
   const [memo, setMemo] = useState("");
   const [exchangeCode, setExchangeCode] = useState("");
   const [toast, setToast] = useState("");
+  const [portraits, setPortraits] = useState<Record<string, { dataUrl: string; disclaimer: string }>>({});
+  const [portraitBusyId, setPortraitBusyId] = useState<string | null>(null);
   const watchId = useRef<number | null>(null);
   const lastSentAt = useRef(0);
 
@@ -290,6 +294,28 @@ export function MataneApp() {
     }
   }
 
+  async function generatePortrait(contact: Contact) {
+    setPortraitBusyId(contact.contactUserId);
+    try {
+      const body = await api("/api/portrait", {
+        method: "POST",
+        body: JSON.stringify({ contactUserId: contact.contactUserId }),
+      });
+      setPortraits((current) => ({
+        ...current,
+        [contact.contactUserId]: {
+          dataUrl: String(body.dataUrl),
+          disclaimer: String(body.disclaimer),
+        },
+      }));
+      setToast("OpenAIが想像ポートレートを描きました");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "想像ポートレートを生成できませんでした。");
+    } finally {
+      setPortraitBusyId(null);
+    }
+  }
+
   async function addDemo() {
     setBusy(true);
     try {
@@ -445,6 +471,31 @@ export function MataneApp() {
               <div className="memory-editor">
                 <div className="editor-header"><div className="avatar large">{initials(selectedContact.name)}</div><div><p>MEMORY FOR</p><h2>{selectedContact.name}</h2><span>{selectedContact.org}</span></div><button onClick={() => setSelectedId(null)} aria-label="閉じる">×</button></div>
                 {selectedContact.facts.length > 0 && <div className="fact-list">{selectedContact.facts.map((fact) => <span key={fact}>{fact}</span>)}</div>}
+                <section className="portrait-studio" aria-label="AI想像ポートレート">
+                  <div className="portrait-heading"><div><p>AI IMAGINED PORTRAIT</p><h3>記憶の中の雰囲気</h3></div><span>OPENAI</span></div>
+                  {portraits[selectedContact.contactUserId] ? (
+                    <div className="portrait-result">
+                      <Image src={portraits[selectedContact.contactUserId].dataUrl} alt={`${selectedContact.name}さんのメモから作ったAI想像ポートレート`} fill unoptimized sizes="260px" />
+                      <span>AIの想像</span>
+                    </div>
+                  ) : (
+                    <div className="portrait-placeholder"><span>{initials(selectedContact.name)}</span><i /><i /></div>
+                  )}
+                  {selectedContact.visualTraits.length > 0 ? (
+                    <div className="trait-list">{selectedContact.visualTraits.map((trait) => <span key={trait}>{trait}</span>)}</div>
+                  ) : (
+                    <p className="portrait-hint">服・髪型・メガネ・表情・雰囲気をメモすると描けます。</p>
+                  )}
+                  <button
+                    type="button"
+                    className="portrait-button"
+                    onClick={() => generatePortrait(selectedContact)}
+                    disabled={portraitBusyId === selectedContact.contactUserId || !selectedContact.visualTraits.length}
+                  >
+                    <span>✦</span>{portraitBusyId === selectedContact.contactUserId ? "OpenAIが描いています…" : portraits[selectedContact.contactUserId] ? "もう一度想像して描く" : "メモから想像して描く"}
+                  </button>
+                  <small>{portraits[selectedContact.contactUserId]?.disclaimer || "本人の顔を再現・特定するものではありません。"}</small>
+                </section>
                 {selectedContact.alertSuggested && (
                   <div className="alert-suggestion">
                     <p><strong>AIからの注意候補</strong>{selectedContact.alertReason || "メモに注意が必要な内容があります"}</p>

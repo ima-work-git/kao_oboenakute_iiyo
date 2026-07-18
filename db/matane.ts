@@ -24,6 +24,7 @@ export type ContactProfile = {
   tags: string[];
   memos: Memo[];
   facts: string[];
+  visualTraits: string[];
   alertLevel: "normal" | "caution";
   alertSuggested: boolean;
   alertReason: string | null;
@@ -65,6 +66,7 @@ type ContactRow = {
   tags: string;
   memos: string;
   facts: string;
+  visual_traits: string;
   alert_level: string;
   alert_suggested: number;
   alert_reason: string | null;
@@ -147,6 +149,7 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
     tags: parseArray<string>(row.tags),
     memos: parseArray<Memo>(row.memos),
     facts: parseArray<string>(row.facts),
+    visualTraits: parseArray<string>(row.visual_traits),
     alertLevel: row.alert_level === "caution" ? "caution" : "normal",
     alertSuggested: Boolean(row.alert_suggested),
     alertReason: row.alert_reason,
@@ -230,6 +233,7 @@ export async function ensureMataneDb() {
       tags TEXT NOT NULL DEFAULT '[]',
       memos TEXT NOT NULL DEFAULT '[]',
       facts TEXT NOT NULL DEFAULT '[]',
+      visual_traits TEXT NOT NULL DEFAULT '[]',
       alert_level TEXT NOT NULL DEFAULT 'normal',
       alert_suggested INTEGER NOT NULL DEFAULT 0,
       alert_reason TEXT,
@@ -241,6 +245,10 @@ export async function ensureMataneDb() {
       "CREATE UNIQUE INDEX IF NOT EXISTS contacts_owner_target_idx ON contacts (owner_id, contact_user_id)"
     ),
   ]);
+  const contactColumns = await db.prepare("PRAGMA table_info(contacts)").all<{ name: string }>();
+  if (!(contactColumns.results ?? []).some((column) => column.name === "visual_traits")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN visual_traits TEXT NOT NULL DEFAULT '[]'").run();
+  }
   await seedDemoUsers(db);
   return db;
 }
@@ -302,7 +310,7 @@ async function contactRows(ownerId: string) {
   const result = await db
     .prepare(
       `SELECT
-        c.owner_id, c.contact_user_id, c.tags, c.memos, c.facts,
+        c.owner_id, c.contact_user_id, c.tags, c.memos, c.facts, c.visual_traits,
         c.alert_level, c.alert_suggested, c.alert_reason, c.hud_text,
         c.created_at, c.updated_at,
         u.name AS contact_name, u.reading AS contact_reading,
@@ -399,6 +407,7 @@ export async function updateMemory(input: {
   contactUserId: string;
   memo: string;
   facts: string[];
+  visualTraits: string[];
   tags: string[];
   alertSuggested: boolean;
   alertReason: string | null;
@@ -411,9 +420,10 @@ export async function updateMemory(input: {
   const memos = [...current.memos, { date: now.slice(0, 10), text: input.memo }];
   const tags = Array.from(new Set([...current.tags, ...input.tags])).slice(0, 8);
   const facts = Array.from(new Set([...current.facts, ...input.facts])).slice(-8);
+  const visualTraits = Array.from(new Set([...current.visualTraits, ...input.visualTraits])).slice(-8);
   await db
     .prepare(
-      `UPDATE contacts SET tags = ?, memos = ?, facts = ?,
+      `UPDATE contacts SET tags = ?, memos = ?, facts = ?, visual_traits = ?,
        alert_suggested = ?, alert_reason = ?, hud_text = ?, updated_at = ?
        WHERE owner_id = ? AND contact_user_id = ?`
     )
@@ -421,6 +431,7 @@ export async function updateMemory(input: {
       JSON.stringify(tags),
       JSON.stringify(memos),
       JSON.stringify(facts),
+      JSON.stringify(visualTraits),
       input.alertSuggested ? 1 : 0,
       input.alertReason,
       input.hudText,
@@ -483,20 +494,21 @@ export async function addDemoNearby(owner: UserRow, latitude: number, longitude:
       .bind(latitude, longitude + 0.00038, now, now),
     db
       .prepare(
-        `UPDATE contacts SET tags = ?, memos = ?, facts = ?, hud_text = ?, updated_at = ?
+        `UPDATE contacts SET tags = ?, memos = ?, facts = ?, visual_traits = ?, hud_text = ?, updated_at = ?
          WHERE owner_id = ? AND contact_user_id = 'demo-tanaka'`
       )
       .bind(
         JSON.stringify(["猫", "Python"]),
-        JSON.stringify([{ date: "2026-07-18", text: "猫を2匹飼っている。Pythonが得意。" }]),
+        JSON.stringify([{ date: "2026-07-18", text: "猫を2匹飼っている。Pythonが得意。丸い黒縁メガネと緑のパーカーが印象的。" }]),
         JSON.stringify(["猫を2匹飼っている", "Pythonが得意"]),
+        JSON.stringify(["丸い黒縁メガネ", "緑のパーカー", "穏やかな雰囲気"]),
         "田中さん｜Neko Labs\n猫の話 → 2匹とも元気？",
         now,
         owner.id
       ),
     db
       .prepare(
-        `UPDATE contacts SET tags = ?, memos = ?, facts = ?, alert_level = 'caution',
+        `UPDATE contacts SET tags = ?, memos = ?, facts = ?, visual_traits = ?, alert_level = 'caution',
          alert_reason = ?, hud_text = ?, updated_at = ?
          WHERE owner_id = ? AND contact_user_id = 'demo-sato'`
       )
@@ -504,6 +516,7 @@ export async function addDemoNearby(owner: UserRow, latitude: number, longitude:
         JSON.stringify(["営業", "SaaS"]),
         JSON.stringify([{ date: "2026-07-18", text: "前回は強引な勧誘が続いて少し困った。" }]),
         JSON.stringify(["前回は勧誘が長かった"]),
+        JSON.stringify(["紺のジャケット", "きびきびした雰囲気"]),
         "強引な勧誘が続いた",
         "!! 佐藤さんが近くにいます\n強引な勧誘 → 無理せず離れる",
         now,

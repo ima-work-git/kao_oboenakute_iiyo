@@ -11,6 +11,7 @@
 3. 次の会場で双方がMATANEを開き、位置共有をONにする
 4. 半径150m以内に交換済みの相手がいれば、名前と前回の会話を表示する
 5. 会話メモをOpenAIで事実・タグ・次の一言に整理する
+6. 明記した服・髪型・メガネ・雰囲気から、AIの「想像ポートレート」を描く
 
 評価用の「デモ会場をつくる」ボタンでは、位置情報を許可しなくても近くに2人いる状態を再現できます。
 
@@ -24,11 +25,12 @@
 
 ## OpenAI
 
-`OPENAI_API_KEY` がある場合、Responses APIのStructured Outputsを使って自由記述メモを構造化します。未設定時も審査デモが止まらないよう、同じJSON形状の決定的フォールバックで動きます。
+`OPENAI_API_KEY` がある場合、Responses APIのStructured Outputsを使って自由記述メモを構造化し、Image APIの`gpt-image-2`で想像ポートレートを生成します。ポートレートは一時表示のみで保存せず、「本人の再現・特定ではない」と常に明示します。テキスト整理は、キー未設定時も審査デモが止まらない決定的フォールバックで動きます。
 
 ```env
 OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-5.6-luna
+OPENAI_IMAGE_MODEL=gpt-image-2
 ```
 
 ## ローカル起動
@@ -51,7 +53,7 @@ npm test
 ## 構成
 
 - `app/matane-app.tsx`: スマホUIと位置共有
-- `app/api/*`: セッション、交換、近接、メモ解析API
+- `app/api/*`: セッション、交換、近接、メモ解析、想像ポートレートAPI
 - `db/matane.ts`: D1永続化と距離計算
-- `lib/openai.ts`: Responses API + Structured Outputs
+- `lib/openai.ts`: Responses API + Structured Outputs + Image API
 - `SPEC.md`: 当初案とスマホMVPへの変更記録

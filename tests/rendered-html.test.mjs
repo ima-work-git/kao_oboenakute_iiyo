@@ -17,6 +17,8 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /顔認証なし/);
   assert.match(app, /MATANEをはじめる/);
   assert.match(app, /visibilitychange/);
+  assert.match(app, /AI IMAGINED PORTRAIT/);
+  assert.match(app, /本人の顔を再現・特定するものではありません/);
   assert.match(layout, /viewportFit:\s*"cover"/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(manifest, /matane-app/);
@@ -41,4 +43,17 @@ test("ships durable data and no disposable starter preview", async () => {
   assert.match(migration, /CREATE TABLE `users`/);
   assert.match(migration, /CREATE TABLE `contacts`/);
   await assert.rejects(access(new URL("app/_sites-preview", root)));
+});
+
+test("connects structured memory to OpenAI image generation", async () => {
+  const [openai, portraitRoute, schema] = await Promise.all([
+    readFile(new URL("lib/openai.ts", root), "utf8"),
+    readFile(new URL("app/api/portrait/route.ts", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+  ]);
+  assert.match(openai, /gpt-image-2/);
+  assert.match(openai, /\/v1\/images\/generations/);
+  assert.match(openai, /visualTraits/);
+  assert.match(portraitRoute, /generateImaginedPortrait/);
+  assert.match(schema, /visual_traits/);
 });

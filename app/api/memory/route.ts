@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       contactUserId,
       memo,
       facts: analysis.facts,
+      visualTraits: analysis.visualTraits,
       tags: analysis.tags,
       alertSuggested: analysis.alertSuggested,
       alertReason: analysis.alertReason,

@@ -32,6 +32,7 @@ export const contacts = sqliteTable(
     tags: text("tags").notNull().default("[]"),
     memos: text("memos").notNull().default("[]"),
     facts: text("facts").notNull().default("[]"),
+    visualTraits: text("visual_traits").notNull().default("[]"),
     alertLevel: text("alert_level").notNull().default("normal"),
     alertSuggested: integer("alert_suggested", { mode: "boolean" }).notNull().default(false),
     alertReason: text("alert_reason"),

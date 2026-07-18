@@ -1,0 +1,1 @@
+ALTER TABLE `contacts` ADD `visual_traits` text DEFAULT '[]' NOT NULL;
