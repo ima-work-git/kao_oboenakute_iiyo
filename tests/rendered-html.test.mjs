@@ -141,4 +141,8 @@ test("provides a one-tap judge scenario with twenty memorable friends", async ()
   assert.match(readme, /肖像権侵害や生体情報漏えいのリスクを抑え/);
   assert.match(readme, /懇親会/);
   assert.match(readme, /カンファレンスの休憩時間/);
+  assert.match(readme, /将来構想：ネイティブアプリ化/);
+  assert.match(readme, /Bluetooth Low Energy（BLE）/);
+  assert.match(readme, /専用ビーコンなどの外部機器は使いません/);
+  assert.match(readme, /短時間で変わる匿名ID/);
 });
