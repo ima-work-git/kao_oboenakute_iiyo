@@ -18,6 +18,11 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /MATANEをはじめる/);
   assert.match(app, /visibilitychange/);
   assert.match(app, /AI IMAGINED PORTRAIT/);
+  assert.match(app, /PORTRAIT_WAITING_MESSAGES/);
+  assert.match(app, /トイレに篭って待つのも作戦です/);
+  assert.match(app, /AI画像は少し時間がかかります/);
+  assert.match(app, /setPortraitWaitingMessage/);
+  assert.match(css, /portrait-waiting/);
   assert.match(app, /useState<Tab>\("exchange"\)/);
   assert.match(app, /QRCode\.toDataURL/);
   assert.match(app, /searchParams\.set\("exchange"/);

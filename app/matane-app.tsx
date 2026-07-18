@@ -45,6 +45,21 @@ type AccountIdentity = { email: string; displayName: string };
 const TOKEN_KEY = "matane_device_token";
 const SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F";
 const SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F";
+const PORTRAIT_WAITING_MESSAGES = [
+  "メモの特徴を一つずつ絵にしています。少しだけお待ちください。",
+  "トイレに篭って待つのも作戦です。戻るころには完成しているかも。",
+  "名札を二度見するふりをしながら、のんびり待ちましょう。",
+  "AIが髪型・服装・体型を慎重に描き分けています。",
+  "お茶を一口どうぞ。急がせるより、メモへの忠実さを優先しています。",
+  "次に話すひと言を考えている間に、ポートレートを仕上げます。",
+  "会場を一周すると完成しているかもしれません。迷子にはご注意を。",
+  "画像生成は文章より少しゆっくりです。この画面はそのままで大丈夫。",
+] as const;
+
+function randomPortraitWaitingMessage(previous = "") {
+  const candidates = PORTRAIT_WAITING_MESSAGES.filter((message) => message !== previous);
+  return candidates[Math.floor(Math.random() * candidates.length)] ?? PORTRAIT_WAITING_MESSAGES[0];
+}
 
 async function avatarFromFile(file: File) {
   if (!file.type.startsWith("image/")) throw new Error("画像ファイルを選んでください。 / Choose an image.");
@@ -113,6 +128,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [toast, setToast] = useState("");
   const [portraits, setPortraits] = useState<Record<string, { dataUrl: string; disclaimer: string; mode: "openai" | "fallback" }>>({});
   const [portraitBusyId, setPortraitBusyId] = useState<string | null>(null);
+  const [portraitWaitingMessage, setPortraitWaitingMessage] = useState<string>(PORTRAIT_WAITING_MESSAGES[0]);
   const watchId = useRef<number | null>(null);
   const lastSentAt = useRef(0);
   const memoTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -215,6 +231,14 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     const timer = window.setTimeout(() => setToast(""), 3200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!portraitBusyId) return;
+    const timer = window.setInterval(() => {
+      setPortraitWaitingMessage((previous) => randomPortraitWaitingMessage(previous));
+    }, 4_800);
+    return () => window.clearInterval(timer);
+  }, [portraitBusyId]);
 
   const postLocation = useCallback(
     async (coords: Coordinates, force = false) => {
@@ -517,6 +541,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   }
 
   async function generatePortrait(contact: Contact) {
+    setPortraitWaitingMessage(randomPortraitWaitingMessage());
     setPortraitBusyId(contact.contactUserId);
     try {
       const body = await api("/api/portrait", {
@@ -783,6 +808,16 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                     </div>
                   ) : (
                     <div className="portrait-placeholder"><span>{initials(selectedContact.name)}</span><i /><i /></div>
+                  )}
+                  {portraitBusyId === selectedContact.contactUserId && (
+                    <div className="portrait-waiting" role="status" aria-live="polite">
+                      <span className="portrait-waiting-mark" aria-hidden="true">✦</span>
+                      <div>
+                        <strong>AI画像は少し時間がかかります</strong>
+                        <p>{portraitWaitingMessage}</p>
+                        <small>Please keep this screen open while AI is drawing.</small>
+                      </div>
+                    </div>
                   )}
                   <p className="portrait-hint">保存したメモ原文をもとに生成します。性別・年代・体型・服・髪型を具体的に書くほど忠実になります。<br />Generated from your original notes.</p>
                   <button
