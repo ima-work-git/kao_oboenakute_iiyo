@@ -13,6 +13,8 @@ test("builds the MATANE mobile experience", async () => {
   ]);
   assert.match(layout, /lang="ja"/i);
   assert.match(layout, /MATANE — 近くにいる、を思い出す/);
+  assert.match(layout, /matane-app-icon\.svg/);
+  assert.match(layout, /apple-icon\.png/);
   assert.match(app, /名前を思い出す前に/);
   assert.match(app, /顔認証なし/);
   assert.match(app, /MATANEをはじめる/);
@@ -22,6 +24,7 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /トイレに篭って待つのも作戦です/);
   assert.match(app, /AI画像は少し時間がかかります/);
   assert.match(app, /setPortraitWaitingMessage/);
+  assert.match(app, /portrait-waiting-mark[^\n]+<i \/><b>\?<\/b>/);
   assert.match(css, /portrait-waiting/);
   assert.match(app, /useState<Tab>\("exchange"\)/);
   assert.match(app, /QRCode\.toDataURL/);
@@ -44,6 +47,9 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(manifest, /matane-app/);
   assert.doesNotMatch(`${layout}\n${app}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
+  await access(new URL("app/icon.png", root));
+  await access(new URL("app/apple-icon.png", root));
+  await access(new URL("public/matane-app-icon.svg", root));
   await access(new URL("dist/server/index.js", root));
 });
 

@@ -811,7 +811,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                   )}
                   {portraitBusyId === selectedContact.contactUserId && (
                     <div className="portrait-waiting" role="status" aria-live="polite">
-                      <span className="portrait-waiting-mark" aria-hidden="true">✦</span>
+                      <span className="portrait-waiting-mark" aria-hidden="true"><i /><b>?</b></span>
                       <div>
                         <strong>AI画像は少し時間がかかります</strong>
                         <p>{portraitWaitingMessage}</p>

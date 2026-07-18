@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">MATANE app icon</title>
+  <desc id="desc">A face silhouette with a question mark badge</desc>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="38%" r="76%">
+      <stop offset="0" stop-color="#23483c"/>
+      <stop offset="1" stop-color="#0d1d19"/>
+    </radialGradient>
+    <linearGradient id="person" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f8e9"/>
+      <stop offset="1" stop-color="#d9e7cf"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#06100d" flood-opacity=".48"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#background)"/>
+  <g fill="none" stroke="#c9f56a" stroke-opacity=".13" stroke-width="4">
+    <circle cx="512" cy="512" r="390"/>
+    <circle cx="512" cy="512" r="300"/>
+    <circle cx="512" cy="512" r="210"/>
+  </g>
+  <circle cx="512" cy="512" r="392" fill="#c9f56a" fill-opacity=".035"/>
+
+  <g fill="url(#person)" filter="url(#soft-shadow)">
+    <circle cx="456" cy="375" r="150"/>
+    <path d="M174 852c15-176 132-292 282-292s267 116 282 292c3 34-24 62-58 62H232c-34 0-61-28-58-62Z"/>
+  </g>
+
+  <g filter="url(#soft-shadow)">
+    <circle cx="724" cy="302" r="158" fill="#c9f56a"/>
+    <circle cx="724" cy="302" r="132" fill="none" stroke="#11241e" stroke-opacity=".17" stroke-width="5"/>
+    <text x="724" y="390" fill="#13251f" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="250" font-weight="900" text-anchor="middle">?</text>
+  </g>
+
+  <circle cx="832" cy="758" r="16" fill="#c9f56a"/>
+  <path d="M832 700c5 31 17 49 44 58-27 9-39 27-44 58-5-31-17-49-44-58 27-9 39-27 44-58Z" fill="#c9f56a" fill-opacity=".74"/>
+</svg>

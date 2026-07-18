@@ -15,7 +15,13 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase,
     title,
     description,
-    icons: { icon: "/icon.png", apple: "/icon.png" },
+    icons: {
+      icon: [
+        { url: "/icon.png", type: "image/png", sizes: "1024x1024" },
+        { url: "/matane-app-icon.svg", type: "image/svg+xml" },
+      ],
+      apple: { url: "/apple-icon.png", type: "image/png", sizes: "180x180" },
+    },
     openGraph: {
       title,
       description,
