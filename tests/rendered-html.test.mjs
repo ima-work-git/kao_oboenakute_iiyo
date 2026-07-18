@@ -119,3 +119,26 @@ test("keeps AI structure private while original notes remain editable", async ()
   assert.match(memoryRoute, /replaceAndReanalyze/);
   assert.match(database, /export async function replaceMemories/);
 });
+
+test("provides a one-tap judge scenario with twenty memorable friends", async () => {
+  const [app, reviewerRoute, database, readme] = await Promise.all([
+    readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/reviewer/route.ts", root), "utf8"),
+    readFile(new URL("db/matane.ts", root), "utf8"),
+    readFile(new URL("README.md", root), "utf8"),
+  ]);
+  assert.match(app, /審査デモを開始 \/ Start judge demo/);
+  assert.match(app, /20人と交換済み/);
+  assert.match(reviewerRoute, /createReviewerDemoSession/);
+  assert.match(database, /REVIEWER_VENUE/);
+  assert.match(database, /35\.6564031/);
+  assert.match(database, /139\.6964821/);
+  assert.equal((database.match(/id: "reviewer-persona-\d{2}"/g) ?? []).length, 20);
+  assert.equal((database.match(/nearbyOffset: \[/g) ?? []).length, 10);
+  assert.match(readme, /顔が覚えられない同志よ、もうそのストレスは抱えなくていい/);
+  assert.match(readme, /使うのはスマホだけ/);
+  assert.match(readme, /60秒デモシナリオ/);
+  assert.match(readme, /肖像権侵害や生体情報漏えいのリスクを抑え/);
+  assert.match(readme, /懇親会/);
+  assert.match(readme, /カンファレンスの休憩時間/);
+});

@@ -83,6 +83,236 @@ type ContactRow = {
 
 const LOCATION_TTL_MS = 60 * 60 * 1000;
 export const NEARBY_RADIUS_METERS = 150;
+export const REVIEWER_VENUE = {
+  name: "渋谷ソラスタコンファレンス",
+  latitude: 35.6564031,
+  longitude: 139.6964821,
+};
+
+type ReviewerPersona = {
+  id: string;
+  publicCode: string;
+  name: string;
+  reading: string;
+  org: string;
+  memo: string;
+  visualTraits: string[];
+  tags: string[];
+  nearbyOffset?: [latitude: number, longitude: number];
+};
+
+const REVIEWER_PERSONAS: ReviewerPersona[] = [
+  {
+    id: "reviewer-persona-01",
+    publicCode: "RV1001",
+    name: "黒田 悠斗",
+    reading: "くろだ ゆうと",
+    org: "Pixel Forge",
+    memo: "30代の背が高く細身の男性。鮮やかな赤いニット帽、丸い銀縁メガネ、マスタード色のオーバーシャツが目印。前回はアクセシブルなUI設計の話で盛り上がった。",
+    visualTraits: ["30代の背が高く細身の男性", "鮮やかな赤いニット帽", "丸い銀縁メガネ", "マスタード色のオーバーシャツ"],
+    tags: ["UI", "アクセシビリティ"],
+    nearbyOffset: [0.00007, 0.00003],
+  },
+  {
+    id: "reviewer-persona-02",
+    publicCode: "RV1002",
+    name: "森川 彩",
+    reading: "もりかわ あや",
+    org: "Canvas AI",
+    memo: "20代後半の小柄な女性。短いピンクのボブヘア、大きな白縁メガネ、コバルトブルーのワンピースが印象的。生成AIとブランドデザインを研究している。",
+    visualTraits: ["20代後半の小柄な女性", "短いピンクのボブヘア", "大きな白縁メガネ", "コバルトブルーのワンピース"],
+    tags: ["生成AI", "デザイン"],
+    nearbyOffset: [-0.00008, 0.00004],
+  },
+  {
+    id: "reviewer-persona-03",
+    publicCode: "RV1003",
+    name: "大橋 健司",
+    reading: "おおはし けんじ",
+    org: "FinBridge",
+    memo: "40代のとてもふくよかな男性。スキンヘッド、濃い黒ひげ、緑のアロハシャツ、太いオレンジ色の腕時計が目立つ。金融APIの連携先を探している。",
+    visualTraits: ["40代のとてもふくよかな男性", "スキンヘッド", "濃い黒ひげ", "緑のアロハシャツ", "太いオレンジ色の腕時計"],
+    tags: ["FinTech", "API"],
+    nearbyOffset: [0.00012, -0.00002],
+  },
+  {
+    id: "reviewer-persona-04",
+    publicCode: "RV1004",
+    name: "水野 玲奈",
+    reading: "みずの れな",
+    org: "Sprint Base",
+    memo: "30代の背が高くスポーティーな女性。高いポニーテール、オレンジ色のトラックジャケット、首に銀色の大型ヘッドホン。プロダクトマネージャー採用の話をした。",
+    visualTraits: ["30代の背が高くスポーティーな女性", "高いポニーテール", "オレンジ色のトラックジャケット", "銀色の大型ヘッドホン"],
+    tags: ["プロダクト", "採用"],
+    nearbyOffset: [-0.00011, -0.00005],
+  },
+  {
+    id: "reviewer-persona-05",
+    publicCode: "RV1005",
+    name: "岡本 蓮",
+    reading: "おかもと れん",
+    org: "Fluid Studio",
+    memo: "20代の細身で中性的な雰囲気の人。左右非対称の青いショートヘア、紫のダブルスーツ、片耳だけの大きな三角イヤリング。空間コンピューティングの展示を作っている。",
+    visualTraits: ["20代の細身で中性的な雰囲気", "左右非対称の青いショートヘア", "紫のダブルスーツ", "大きな三角イヤリング"],
+    tags: ["XR", "展示"],
+    nearbyOffset: [0.00003, 0.00009],
+  },
+  {
+    id: "reviewer-persona-06",
+    publicCode: "RV1006",
+    name: "神谷 直子",
+    reading: "かみや なおこ",
+    org: "Startup Legal Lab",
+    memo: "50代の女性。ボリュームのあるグレーの巻き髪、黄色いキャットアイ型メガネ、真っ赤なスカーフが目印。スタートアップ契約の無料相談をしてくれた。",
+    visualTraits: ["50代の女性", "ボリュームのあるグレーの巻き髪", "黄色いキャットアイ型メガネ", "真っ赤なスカーフ"],
+    tags: ["法務", "スタートアップ"],
+    nearbyOffset: [-0.00004, -0.0001],
+  },
+  {
+    id: "reviewer-persona-07",
+    publicCode: "RV1007",
+    name: "松田 航",
+    reading: "まつだ わたる",
+    org: "MoveX",
+    memo: "20代後半の筋肉質な男性。ラインの入った短い刈り上げ、白いボンバージャケット、ネオングリーンのスニーカー。ウェルネスアプリとの協業を考えている。",
+    visualTraits: ["20代後半の筋肉質な男性", "ラインの入った短い刈り上げ", "白いボンバージャケット", "ネオングリーンのスニーカー"],
+    tags: ["ウェルネス", "協業"],
+    nearbyOffset: [0.00015, 0.00006],
+  },
+  {
+    id: "reviewer-persona-08",
+    publicCode: "RV1008",
+    name: "石井 杏",
+    reading: "いしい あん",
+    org: "Culture Grid",
+    memo: "40代のふくよかな女性。腰まである銀色の一本三つ編み、ターコイズ色の着物風ジャケット、大きな星形イヤリング。地域文化のデジタルアーカイブを運営している。",
+    visualTraits: ["40代のふくよかな女性", "腰まである銀色の一本三つ編み", "ターコイズ色の着物風ジャケット", "大きな星形イヤリング"],
+    tags: ["文化", "アーカイブ"],
+    nearbyOffset: [-0.00016, 0.00003],
+  },
+  {
+    id: "reviewer-persona-09",
+    publicCode: "RV1009",
+    name: "藤原 翔",
+    reading: "ふじわら しょう",
+    org: "Lens Loop",
+    memo: "30代の小柄な男性。とても強い黒いくせ毛、太い口ひげ、紫のパーカー、斜め掛けの黄色いカメラストラップ。イベント撮影の見積もりを相談した。",
+    visualTraits: ["30代の小柄な男性", "とても強い黒いくせ毛", "太い口ひげ", "紫のパーカー", "黄色いカメラストラップ"],
+    tags: ["写真", "イベント"],
+    nearbyOffset: [0.00002, -0.00014],
+  },
+  {
+    id: "reviewer-persona-10",
+    publicCode: "RV1010",
+    name: "長谷川 芽衣",
+    reading: "はせがわ めい",
+    org: "Neon Research",
+    memo: "20代の背が高く細身の女性。長い二本三つ編み、ライムグリーンのジャケット、黒いタートルネック、六角形のメガネ。音声AIのユーザー調査をしている。",
+    visualTraits: ["20代の背が高く細身の女性", "長い二本三つ編み", "ライムグリーンのジャケット", "六角形のメガネ"],
+    tags: ["音声AI", "リサーチ"],
+    nearbyOffset: [-0.00006, 0.00015],
+  },
+  {
+    id: "reviewer-persona-11",
+    publicCode: "RV1011",
+    name: "吉田 修",
+    reading: "よしだ おさむ",
+    org: "Mentor Dock",
+    memo: "60代の細身の男性。白いカイゼルひげ、紺のフェルト帽、えんじ色のベスト、木製の杖が目印。起業家メンタリングの話をした。",
+    visualTraits: ["60代の細身の男性", "白いカイゼルひげ", "紺のフェルト帽", "えんじ色のベスト", "木製の杖"],
+    tags: ["起業", "メンタリング"],
+  },
+  {
+    id: "reviewer-persona-12",
+    publicCode: "RV1012",
+    name: "高橋 紗季",
+    reading: "たかはし さき",
+    org: "Copy & Co.",
+    memo: "30代の小柄な女性。一直線に切りそろえた黒いボブ、赤いキャットアイ型メガネ、白黒の水玉ブラウス。プロダクトのタグラインを一緒に考えた。",
+    visualTraits: ["30代の小柄な女性", "一直線の黒いボブ", "赤いキャットアイ型メガネ", "白黒の水玉ブラウス"],
+    tags: ["コピー", "ブランド"],
+  },
+  {
+    id: "reviewer-persona-13",
+    publicCode: "RV1013",
+    name: "西村 陸",
+    reading: "にしむら りく",
+    org: "Field Robotics",
+    memo: "20代の肩幅が広い男性。肩までの金髪、青いデニムのオーバーオール、首に赤い防音ヘッドホン。倉庫ロボットの実証実験を進めている。",
+    visualTraits: ["20代の肩幅が広い男性", "肩までの金髪", "青いデニムのオーバーオール", "赤い防音ヘッドホン"],
+    tags: ["ロボティクス", "物流"],
+  },
+  {
+    id: "reviewer-persona-14",
+    publicCode: "RV1014",
+    name: "伊藤 真琴",
+    reading: "いとう まこと",
+    org: "People First",
+    memo: "50代の大柄な女性。白髪交じりの短いピクシーカット、鮮やかなオレンジのポンチョ、大きな木のネックレス。組織開発ワークショップを企画している。",
+    visualTraits: ["50代の大柄な女性", "白髪交じりの短いピクシーカット", "鮮やかなオレンジのポンチョ", "大きな木のネックレス"],
+    tags: ["組織開発", "HR"],
+  },
+  {
+    id: "reviewer-persona-15",
+    publicCode: "RV1015",
+    name: "中村 慧",
+    reading: "なかむら けい",
+    org: "Green Ledger",
+    memo: "40代の背が高く痩せた男性。長いダークブラウンの髪を後ろで束ね、エメラルド色の三つ揃いスーツ、ピンクのポケットチーフ。脱炭素データ基盤を作っている。",
+    visualTraits: ["40代の背が高く痩せた男性", "長いダークブラウンの髪を後ろで束ねている", "エメラルド色の三つ揃いスーツ", "ピンクのポケットチーフ"],
+    tags: ["脱炭素", "データ"],
+  },
+  {
+    id: "reviewer-persona-16",
+    publicCode: "RV1016",
+    name: "小林 凛",
+    reading: "こばやし りん",
+    org: "Signal Works",
+    memo: "20代のスポーティーな女性。片側を刈り上げた紫の髪、白いテックウェアベスト、青い透明バイザー。災害通知サービスの開発者。",
+    visualTraits: ["20代のスポーティーな女性", "片側を刈り上げた紫の髪", "白いテックウェアベスト", "青い透明バイザー"],
+    tags: ["防災", "通知"],
+  },
+  {
+    id: "reviewer-persona-17",
+    publicCode: "RV1017",
+    name: "山口 誠",
+    reading: "やまぐち まこと",
+    org: "Rainy Day SaaS",
+    memo: "30代のがっしりした男性。丸いマッシュヘア、黄色いレインコート、四角い透明フレームのメガネ。中小企業向けSaaSの販売パートナーを探している。",
+    visualTraits: ["30代のがっしりした男性", "丸いマッシュヘア", "黄色いレインコート", "四角い透明フレームのメガネ"],
+    tags: ["SaaS", "販売"],
+  },
+  {
+    id: "reviewer-persona-18",
+    publicCode: "RV1018",
+    name: "青木 久美",
+    reading: "あおき くみ",
+    org: "Local Bloom",
+    memo: "60代の小柄な女性。短い白い巻き髪、紫の丸メガネ、緑を基調にした大きな花柄ワンピース。商店街のデジタル化を支援している。",
+    visualTraits: ["60代の小柄な女性", "短い白い巻き髪", "紫の丸メガネ", "緑の大きな花柄ワンピース"],
+    tags: ["地域", "DX"],
+  },
+  {
+    id: "reviewer-persona-19",
+    publicCode: "RV1019",
+    name: "斎藤 駿",
+    reading: "さいとう しゅん",
+    org: "Joyful Data",
+    memo: "20代後半のとても背が高く細身の男性。大きく丸いオレンジ色のカーリーヘア、白黒チェックのスーツ、緑の蝶ネクタイ。データ可視化の登壇者。",
+    visualTraits: ["20代後半のとても背が高く細身の男性", "大きく丸いオレンジ色のカーリーヘア", "白黒チェックのスーツ", "緑の蝶ネクタイ"],
+    tags: ["データ可視化", "登壇"],
+  },
+  {
+    id: "reviewer-persona-20",
+    publicCode: "RV1020",
+    name: "渡辺 澪",
+    reading: "わたなべ みお",
+    org: "Moonshot Care",
+    memo: "30代で中肉中背の人。青緑色のアンダーカット、オーバーサイズのピンクのカーディガン、三日月形のメガネ。介護者向けコミュニティを運営している。",
+    visualTraits: ["30代で中肉中背", "青緑色のアンダーカット", "オーバーサイズのピンクのカーディガン", "三日月形のメガネ"],
+    tags: ["ケア", "コミュニティ"],
+  },
+];
 
 function getBinding(): D1Database {
   const binding = (env as unknown as { DB?: D1Database }).DB;
@@ -304,6 +534,111 @@ export async function createUser(input: {
   const row = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first<UserRow>();
   if (!row) throw new Error("プロフィールを作成できませんでした。");
   return { user: toUser(row), token };
+}
+
+export async function createReviewerDemoSession() {
+  const created = await createUser({
+    name: "審査デモ",
+    reading: "しんさ でも",
+    org: "OpenAI Build Week · JUDGE DEMO",
+    avatarDataUrl: "",
+    accountEmail: null,
+  });
+  const db = await ensureMataneDb();
+  const now = new Date().toISOString();
+
+  await db
+    .prepare(
+      `UPDATE users SET latitude = ?, longitude = ?, location_accuracy = 12,
+       location_enabled = 1, last_seen = ?, updated_at = ? WHERE id = ?`
+    )
+    .bind(REVIEWER_VENUE.latitude, REVIEWER_VENUE.longitude, now, now, created.user.id)
+    .run();
+
+  await db.batch(
+    REVIEWER_PERSONAS.map((persona) => {
+      const nearby = Boolean(persona.nearbyOffset);
+      const latitude = nearby ? REVIEWER_VENUE.latitude + (persona.nearbyOffset?.[0] ?? 0) : null;
+      const longitude = nearby ? REVIEWER_VENUE.longitude + (persona.nearbyOffset?.[1] ?? 0) : null;
+      return db
+        .prepare(
+          `INSERT INTO users (
+            id, device_token, public_code, name, reading, org, avatar_data_url,
+            latitude, longitude, location_accuracy, location_enabled, last_seen,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            reading = excluded.reading,
+            org = excluded.org,
+            latitude = excluded.latitude,
+            longitude = excluded.longitude,
+            location_accuracy = excluded.location_accuracy,
+            location_enabled = excluded.location_enabled,
+            last_seen = excluded.last_seen,
+            updated_at = excluded.updated_at`
+        )
+        .bind(
+          persona.id,
+          `reviewer-persona-token-${persona.id.slice(-2)}`,
+          persona.publicCode,
+          persona.name,
+          persona.reading,
+          persona.org,
+          latitude,
+          longitude,
+          nearby ? 12 : null,
+          nearby ? 1 : 0,
+          nearby ? now : null,
+          now,
+          now
+        );
+    })
+  );
+
+  await db.batch(
+    REVIEWER_PERSONAS.map((persona, index) => {
+      const updatedAt = new Date(Date.now() - index * 60_000).toISOString();
+      return db
+        .prepare(
+          `INSERT INTO contacts (
+            id, owner_id, contact_user_id, tags, memos, facts, visual_traits,
+            alert_level, alert_suggested, alert_reason, hud_text, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'normal', 0, NULL, ?, ?, ?)
+          ON CONFLICT(owner_id, contact_user_id) DO UPDATE SET
+            tags = excluded.tags,
+            memos = excluded.memos,
+            facts = excluded.facts,
+            visual_traits = excluded.visual_traits,
+            alert_level = excluded.alert_level,
+            alert_suggested = excluded.alert_suggested,
+            alert_reason = excluded.alert_reason,
+            hud_text = excluded.hud_text,
+            updated_at = excluded.updated_at`
+        )
+        .bind(
+          `${created.user.id}:${persona.id}`,
+          created.user.id,
+          persona.id,
+          JSON.stringify(persona.tags),
+          JSON.stringify([{ date: "2026-07-18", text: persona.memo }]),
+          JSON.stringify([persona.memo]),
+          JSON.stringify(persona.visualTraits),
+          `${persona.name}さん｜${persona.org}\n${persona.tags[0]}の話を続ける`,
+          now,
+          updatedAt
+        );
+    })
+  );
+
+  const reviewer = await db.prepare("SELECT * FROM users WHERE id = ?").bind(created.user.id).first<UserRow>();
+  if (!reviewer) throw new Error("審査デモを準備できませんでした。");
+  return {
+    ...(await sessionSnapshot(reviewer)),
+    token: created.token,
+    reviewerMode: true,
+    venue: REVIEWER_VENUE,
+  };
 }
 
 export async function updateUserProfile(input: {

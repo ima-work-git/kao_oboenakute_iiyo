@@ -117,6 +117,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const lastSentAt = useRef(0);
   const memoTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const autoExchangeRef = useRef("");
+  const reviewerMode = user?.org.includes("JUDGE DEMO") ?? false;
 
   const api = useCallback(
     async (path: string, init: RequestInit = {}, explicitToken?: string) => {
@@ -141,6 +142,11 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       setUser(nextUser);
       setAvatarDraft(nextUser.avatarDataUrl);
       setContacts(body.contacts as Contact[]);
+      if (nextUser.org.includes("JUDGE DEMO")) {
+        setLocationActive(true);
+        setLocationLabel("渋谷ソラスタコンファレンスの審査デモ");
+        setTab("nearby");
+      }
       if (body.restoredByEmail) setToast("メールからプロフィールを復元しました。 / Profile restored.");
       else if (body.linkedNow) setToast("メールをプロフィールに連携しました。 / Email linked.");
     },
@@ -280,6 +286,10 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     }, 15_000);
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
+      if (reviewerMode) {
+        api("/api/nearby").then((body) => setContacts(body.contacts as Contact[])).catch(() => undefined);
+        return;
+      }
       if (lastCoordinates) postLocation(lastCoordinates, true).catch(() => undefined);
       else enableLocation();
     };
@@ -288,7 +298,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       window.clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [api, enableLocation, lastCoordinates, locationActive, postLocation, token]);
+  }, [api, enableLocation, lastCoordinates, locationActive, postLocation, reviewerMode, token]);
 
   useEffect(() => () => {
     if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
@@ -335,6 +345,28 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       }
     } catch (error) {
       setToast(error instanceof Error ? error.message : "プロフィールを作成できませんでした。");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startReviewerDemo() {
+    setBusy(true);
+    try {
+      const body = await api("/api/reviewer", { method: "POST" }, "");
+      const nextToken = String(body.token || "");
+      const nextUser = body.user as MataneUser;
+      window.localStorage.setItem(TOKEN_KEY, nextToken);
+      setToken(nextToken);
+      setUser(nextUser);
+      setAvatarDraft(nextUser.avatarDataUrl);
+      setContacts(body.contacts as Contact[]);
+      setLocationActive(true);
+      setLocationLabel("渋谷ソラスタコンファレンスの審査デモ");
+      setTab("nearby");
+      setToast("審査デモを準備しました。20人中10人が近くにいます。");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "審査デモを開始できませんでした。");
     } finally {
       setBusy(false);
     }
@@ -576,6 +608,13 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
             <h2>メールでログイン</h2>
             <p>登録済みのプロフィールを、シークレットモードや別端末でも復元できます。</p>
             <a className="auth-primary" href={SIGN_IN_PATH}>ChatGPTでメールを確認 <span>→</span><small>Verify email with ChatGPT</small></a>
+            <div className="auth-divider"><span />または審査用にすぐ体験 / JUDGE DEMO<span /></div>
+            <button className="reviewer-entry" type="button" onClick={startReviewerDemo} disabled={busy}>
+              <span>✦</span>
+              <strong>{busy ? "準備中… / Preparing…" : "審査デモを開始 / Start judge demo"}</strong>
+              <small>登録不要 · 友達20人 · 渋谷ソラスタに10人</small>
+              <b>→</b>
+            </button>
             <button className="guest-button" type="button" onClick={() => setGuestMode(true)}>ログインせず体験する / Continue as guest</button>
             <small className="auth-footnote">MATANEにパスワードは保存しません。確認済みメールだけをプロフィールに紐づけます。</small>
           </section>
@@ -633,6 +672,13 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       <div className="app-content">
         {tab === "nearby" && (
           <section className="screen nearby-screen">
+            {reviewerMode && (
+              <div className="reviewer-demo-guide">
+                <span>JUDGE DEMO</span>
+                <div><strong>渋谷ソラスタで再会するシナリオ</strong><small>20人と交換済み。そのうち特徴の異なる10人が会場にいます。友達を押してメモと想像ポートレートを試してください。</small></div>
+                <b>10 / 20</b>
+              </div>
+            )}
             <div className="hero-panel">
               <p className="hero-kicker">REUNION RADAR</p>
               <h1>{nearbyContacts.length ? `${nearbyContacts.length}人が近くにいます` : "近くの友達を探す"}<small>{nearbyContacts.length ? `${nearbyContacts.length} friends nearby` : "Find nearby friends"}</small></h1>
