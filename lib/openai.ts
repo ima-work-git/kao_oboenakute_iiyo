@@ -152,17 +152,27 @@ export async function analyzeMemory(person: ContactProfile, memo: string): Promi
 export type ImaginedPortrait = {
   dataUrl: string;
   model: string;
+  mode: "openai" | "fallback";
 };
+
+function fallbackPortrait(): ImaginedPortrait {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><rect width="640" height="640" fill="#142820"/><circle cx="320" cy="255" r="125" fill="#e5eddb"/><path d="M95 640c18-172 104-256 225-256s207 84 225 256" fill="#79a941"/><circle cx="278" cy="245" r="38" fill="none" stroke="#20362e" stroke-width="14"/><circle cx="362" cy="245" r="38" fill="none" stroke="#20362e" stroke-width="14"/><path d="M316 245h8M265 315c34 28 76 28 110 0" fill="none" stroke="#20362e" stroke-width="13" stroke-linecap="round"/><circle cx="320" cy="320" r="220" fill="none" stroke="#c9f56a" stroke-opacity=".18" stroke-width="2"/><circle cx="320" cy="320" r="278" fill="none" stroke="#c9f56a" stroke-opacity=".1" stroke-width="2"/></svg>`;
+  return {
+    dataUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    model: "deterministic-demo-sketch",
+    mode: "fallback",
+  };
+}
 
 export async function generateImaginedPortrait(person: ContactProfile): Promise<ImaginedPortrait> {
   const runtime = env as unknown as {
     OPENAI_API_KEY?: string;
     OPENAI_IMAGE_MODEL?: string;
   };
-  if (!runtime.OPENAI_API_KEY) throw new Error("OPENAI_NOT_CONFIGURED");
   if (!person.visualTraits.length) {
     throw new Error("先に、服・髪型・メガネ・表情・雰囲気などをメモしてください。");
   }
+  if (!runtime.OPENAI_API_KEY) return fallbackPortrait();
 
   const model = runtime.OPENAI_IMAGE_MODEL || "gpt-image-2";
   const prompt = [
@@ -202,5 +212,5 @@ export async function generateImaginedPortrait(person: ContactProfile): Promise<
   const payload = (await response.json()) as { data?: Array<{ b64_json?: string }> };
   const image = payload.data?.[0]?.b64_json;
   if (!image) throw new Error("OpenAIから画像を受け取れませんでした。");
-  return { dataUrl: `data:image/jpeg;base64,${image}`, model };
+  return { dataUrl: `data:image/jpeg;base64,${image}`, model, mode: "openai" };
 }

@@ -52,6 +52,7 @@ test("connects structured memory to OpenAI image generation", async () => {
     readFile(new URL("db/schema.ts", root), "utf8"),
   ]);
   assert.match(openai, /gpt-image-2/);
+  assert.match(openai, /deterministic-demo-sketch/);
   assert.match(openai, /\/v1\/images\/generations/);
   assert.match(openai, /visualTraits/);
   assert.match(portraitRoute, /generateImaginedPortrait/);

@@ -74,7 +74,7 @@ export function MataneApp() {
   const [memo, setMemo] = useState("");
   const [exchangeCode, setExchangeCode] = useState("");
   const [toast, setToast] = useState("");
-  const [portraits, setPortraits] = useState<Record<string, { dataUrl: string; disclaimer: string }>>({});
+  const [portraits, setPortraits] = useState<Record<string, { dataUrl: string; disclaimer: string; mode: "openai" | "fallback" }>>({});
   const [portraitBusyId, setPortraitBusyId] = useState<string | null>(null);
   const watchId = useRef<number | null>(null);
   const lastSentAt = useRef(0);
@@ -306,9 +306,10 @@ export function MataneApp() {
         [contact.contactUserId]: {
           dataUrl: String(body.dataUrl),
           disclaimer: String(body.disclaimer),
+          mode: body.mode === "openai" ? "openai" : "fallback",
         },
       }));
-      setToast("OpenAIが想像ポートレートを描きました");
+      setToast(body.mode === "openai" ? "OpenAIが想像ポートレートを描きました" : "デモスケッチを描きました。APIキー設定後はOpenAIで生成します");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "想像ポートレートを生成できませんでした。");
     } finally {
@@ -472,11 +473,11 @@ export function MataneApp() {
                 <div className="editor-header"><div className="avatar large">{initials(selectedContact.name)}</div><div><p>MEMORY FOR</p><h2>{selectedContact.name}</h2><span>{selectedContact.org}</span></div><button onClick={() => setSelectedId(null)} aria-label="閉じる">×</button></div>
                 {selectedContact.facts.length > 0 && <div className="fact-list">{selectedContact.facts.map((fact) => <span key={fact}>{fact}</span>)}</div>}
                 <section className="portrait-studio" aria-label="AI想像ポートレート">
-                  <div className="portrait-heading"><div><p>AI IMAGINED PORTRAIT</p><h3>記憶の中の雰囲気</h3></div><span>OPENAI</span></div>
+                  <div className="portrait-heading"><div><p>AI IMAGINED PORTRAIT</p><h3>記憶の中の雰囲気</h3></div><span>{portraits[selectedContact.contactUserId]?.mode === "fallback" ? "DEMO" : "OPENAI"}</span></div>
                   {portraits[selectedContact.contactUserId] ? (
                     <div className="portrait-result">
                       <Image src={portraits[selectedContact.contactUserId].dataUrl} alt={`${selectedContact.name}さんのメモから作ったAI想像ポートレート`} fill unoptimized sizes="260px" />
-                      <span>AIの想像</span>
+                      <span>{portraits[selectedContact.contactUserId].mode === "openai" ? "AIの想像" : "デモスケッチ"}</span>
                     </div>
                   ) : (
                     <div className="portrait-placeholder"><span>{initials(selectedContact.name)}</span><i /><i /></div>

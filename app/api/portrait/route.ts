@@ -16,17 +16,13 @@ export async function POST(request: Request) {
     const portrait = await generateImaginedPortrait(contact);
     return Response.json({
       ...portrait,
-      disclaimer: "メモから作ったAIの想像です。本人の顔を再現・特定するものではありません。",
+      disclaimer: portrait.mode === "openai"
+        ? "メモから作ったAIの想像です。本人の顔を再現・特定するものではありません。"
+        : "APIキー未設定のデモスケッチです。本人の顔を再現・特定するものではありません。",
     });
   } catch (error) {
     if (error instanceof Error && error.message === "SESSION_REQUIRED") {
       return Response.json({ error: "プロフィールを作成してください。" }, { status: 401 });
-    }
-    if (error instanceof Error && error.message === "OPENAI_NOT_CONFIGURED") {
-      return Response.json(
-        { error: "画像生成を使うには、公開環境にOPENAI_API_KEYを設定してください。" },
-        { status: 503 }
-      );
     }
     return Response.json(
       { error: error instanceof Error ? error.message : "想像ポートレートを生成できませんでした。" },
