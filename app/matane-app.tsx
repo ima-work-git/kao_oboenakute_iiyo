@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 type MataneUser = {
   id: string;
   publicCode: string;
+  accountEmail: string | null;
   name: string;
   reading: string;
   org: string;
@@ -39,8 +40,11 @@ type Contact = {
 
 type Tab = "exchange" | "nearby" | "friends";
 type Coordinates = { latitude: number; longitude: number; accuracy: number };
+type AccountIdentity = { email: string; displayName: string };
 
 const TOKEN_KEY = "matane_device_token";
+const SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F";
+const SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F";
 
 async function avatarFromFile(file: File) {
   if (!file.type.startsWith("image/")) throw new Error("画像ファイルを選んでください。 / Choose an image.");
@@ -97,7 +101,7 @@ async function readJson(response: Response) {
   return body;
 }
 
-export function MataneApp() {
+export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [token, setToken] = useState("");
   const [user, setUser] = useState<MataneUser | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -114,6 +118,7 @@ export function MataneApp() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [profileEditing, setProfileEditing] = useState(false);
   const [avatarDraft, setAvatarDraft] = useState("");
+  const [guestMode, setGuestMode] = useState(false);
   const [toast, setToast] = useState("");
   const [portraits, setPortraits] = useState<Record<string, { dataUrl: string; disclaimer: string; mode: "openai" | "fallback" }>>({});
   const [portraitBusyId, setPortraitBusyId] = useState<string | null>(null);
@@ -137,9 +142,16 @@ export function MataneApp() {
     async (sessionToken: string) => {
       const body = await api("/api/session", {}, sessionToken);
       const nextUser = body.user as MataneUser;
+      const nextToken = String(body.token || sessionToken);
+      if (nextToken) {
+        window.localStorage.setItem(TOKEN_KEY, nextToken);
+        setToken(nextToken);
+      }
       setUser(nextUser);
       setAvatarDraft(nextUser.avatarDataUrl);
       setContacts(body.contacts as Contact[]);
+      if (body.restoredByEmail) setToast("メールからプロフィールを復元しました。 / Profile restored.");
+      else if (body.linkedNow) setToast("メールをプロフィールに連携しました。 / Email linked.");
     },
     [api]
   );
@@ -164,17 +176,20 @@ export function MataneApp() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const stored = window.localStorage.getItem(TOKEN_KEY) || "";
-      if (!stored) {
+      if (!stored && !account) {
         setLoading(false);
         return;
       }
-      setToken(stored);
+      if (stored) setToken(stored);
       refreshSession(stored)
-        .catch(() => window.localStorage.removeItem(TOKEN_KEY))
+        .catch(() => {
+          window.localStorage.removeItem(TOKEN_KEY);
+          setToken("");
+        })
         .finally(() => setLoading(false));
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [refreshSession]);
+  }, [account, refreshSession]);
 
   useEffect(() => {
     if (!user) return;
@@ -317,7 +332,7 @@ export function MataneApp() {
       const createdUser = body.user as MataneUser;
       setUser(createdUser);
       setAvatarDraft(createdUser.avatarDataUrl);
-      setContacts([]);
+      setContacts((body.contacts as Contact[] | undefined) ?? []);
       const pendingCode = new URLSearchParams(window.location.search).get("exchange")?.trim().toUpperCase() || "";
       if (pendingCode && pendingCode !== createdUser.publicCode) {
         autoExchangeRef.current = pendingCode;
@@ -325,7 +340,7 @@ export function MataneApp() {
         window.history.replaceState({}, "", window.location.pathname);
       } else {
         setTab("exchange");
-        setToast("MATANEを始めました。 / Welcome to MATANE.");
+        setToast(body.restoredByEmail ? "プロフィールを復元しました。 / Profile restored." : "MATANEを始めました。 / Welcome to MATANE.");
       }
     } catch (error) {
       setToast(error instanceof Error ? error.message : "プロフィールを作成できませんでした。");
@@ -473,6 +488,11 @@ export function MataneApp() {
     }
   }
 
+  function signOutEverywhere() {
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.location.assign(SIGN_OUT_PATH);
+  }
+
   if (loading) {
     return (
       <main className="loading-screen" aria-live="polite">
@@ -498,20 +518,38 @@ export function MataneApp() {
             顔認証なし。座標は相手に見せません。 / No face recognition or shared coordinates.
           </div>
         </section>
-        <form className="onboarding-card" onSubmit={createProfile}>
-          <p className="step-label">01 — あなたのプロフィール / YOUR PROFILE</p>
-          <label className="avatar-upload">
-            <PersonAvatar name="あなた" src={avatarDraft} className="avatar-preview" />
-            <span><strong>アイコン画像</strong><small>Profile photo · Optional</small></span>
-            <b>選ぶ / Choose</b>
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseAvatar(event.target.files?.[0])} />
-          </label>
-          <label>名前 / Name<input name="name" required placeholder="山田 花子" autoComplete="name" /></label>
-          <label>ふりがな / Reading <small>任意 / Optional</small><input name="reading" placeholder="やまだ はなこ" /></label>
-          <label>所属 / Organization<input name="org" placeholder="OpenAI Build Week" autoComplete="organization" /></label>
-          <button className="primary-button" disabled={busy}>{busy ? "作成中… / Creating…" : "MATANEをはじめる / Get started"}<span>→</span></button>
-          <p className="fine-print">プロフィールは交換した相手にだけ表示されます。<br />Only people you exchange with can see it.</p>
-        </form>
+        {!account && !guestMode && (
+          <section className="auth-card">
+            <div className="auth-icon">✉</div>
+            <p className="step-label">WELCOME BACK / はじめての方も</p>
+            <h2>メールでログイン</h2>
+            <p>登録済みのプロフィールを、シークレットモードや別端末でも復元できます。</p>
+            <a className="auth-primary" href={SIGN_IN_PATH}>ChatGPTでメールを確認 <span>→</span><small>Verify email with ChatGPT</small></a>
+            <button className="guest-button" type="button" onClick={() => setGuestMode(true)}>ログインせず体験する / Continue as guest</button>
+            <small className="auth-footnote">MATANEにパスワードは保存しません。確認済みメールだけをプロフィールに紐づけます。</small>
+          </section>
+        )}
+        {(account || guestMode) && (
+          <form className="onboarding-card" onSubmit={createProfile}>
+            <p className="step-label">01 — あなたのプロフィール / YOUR PROFILE</p>
+            {account ? (
+              <div className="verified-account"><span>✓</span><p><strong>メール確認済み / VERIFIED</strong>{account.email}</p></div>
+            ) : (
+              <div className="guest-account"><p>ゲスト利用中。別端末では復元できません。</p><a href={SIGN_IN_PATH}>メールでログイン / Sign in</a></div>
+            )}
+            <label className="avatar-upload">
+              <PersonAvatar name="あなた" src={avatarDraft} className="avatar-preview" />
+              <span><strong>アイコン画像</strong><small>Profile photo · Optional</small></span>
+              <b>選ぶ / Choose</b>
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseAvatar(event.target.files?.[0])} />
+            </label>
+            <label>名前 / Name<input name="name" required placeholder="山田 花子" defaultValue={account && !account.displayName.includes("@") ? account.displayName : ""} autoComplete="name" /></label>
+            <label>ふりがな / Reading <small>任意 / Optional</small><input name="reading" placeholder="やまだ はなこ" /></label>
+            <label>所属 / Organization<input name="org" placeholder="OpenAI Build Week" autoComplete="organization" /></label>
+            <button className="primary-button" disabled={busy}>{busy ? "作成中… / Creating…" : "MATANEをはじめる / Get started"}<span>→</span></button>
+            <p className="fine-print">プロフィールは交換した相手にだけ表示されます。<br />Only people you exchange with can see it.</p>
+          </form>
+        )}
         {toast && <div className="toast" role="status">{toast}</div>}
       </main>
     );
@@ -682,6 +720,18 @@ export function MataneApp() {
             {profileEditing && (
               <form className="profile-editor" onSubmit={updateProfile}>
                 <div className="profile-editor-heading"><div><p>MY PROFILE</p><h2>プロフィールを編集 <small>Edit profile</small></h2></div><button type="button" onClick={() => { setAvatarDraft(user.avatarDataUrl); setProfileEditing(false); }} aria-label="閉じる / Close">×</button></div>
+                <div className={`account-panel ${user.accountEmail ? "is-linked" : ""}`}>
+                  <span>{user.accountEmail ? "✓" : "✉"}</span>
+                  <div>
+                    <strong>{user.accountEmail ? "メール連携済み / EMAIL LINKED" : "メールを連携 / LINK EMAIL"}</strong>
+                    <small>{user.accountEmail || "別端末やシークレットモードでも復元できます"}</small>
+                  </div>
+                  {account ? (
+                    <button type="button" onClick={signOutEverywhere}>ログアウト<br /><small>Sign out</small></button>
+                  ) : (
+                    <a href={SIGN_IN_PATH}>{user.accountEmail ? "ログイン" : "連携する"}<br /><small>{user.accountEmail ? "Sign in" : "Link"}</small></a>
+                  )}
+                </div>
                 <label className="avatar-upload">
                   <PersonAvatar name={user.name} src={avatarDraft} className="avatar-preview" />
                   <span><strong>アイコン画像</strong><small>Profile photo · Optional</small></span>

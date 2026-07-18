@@ -8,6 +8,7 @@ export type Memo = {
 export type MataneUser = {
   id: string;
   publicCode: string;
+  accountEmail: string | null;
   name: string;
   reading: string;
   org: string;
@@ -38,9 +39,10 @@ export type ContactProfile = {
   updatedAt: string;
 };
 
-type UserRow = {
+export type UserRow = {
   id: string;
   device_token: string;
+  email: string | null;
   public_code: string;
   name: string;
   reading: string;
@@ -107,6 +109,7 @@ function toUser(row: UserRow): MataneUser {
   return {
     id: row.id,
     publicCode: row.public_code,
+    accountEmail: row.email,
     name: row.name,
     reading: row.reading,
     org: row.org,
@@ -220,6 +223,7 @@ export async function ensureMataneDb() {
     db.prepare(`CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       device_token TEXT NOT NULL UNIQUE,
+      email TEXT,
       public_code TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       reading TEXT NOT NULL DEFAULT '',
@@ -253,9 +257,13 @@ export async function ensureMataneDb() {
     ),
   ]);
   const userColumns = await db.prepare("PRAGMA table_info(users)").all<{ name: string }>();
+  if (!(userColumns.results ?? []).some((column) => column.name === "email")) {
+    await db.prepare("ALTER TABLE users ADD COLUMN email TEXT").run();
+  }
   if (!(userColumns.results ?? []).some((column) => column.name === "avatar_data_url")) {
     await db.prepare("ALTER TABLE users ADD COLUMN avatar_data_url TEXT NOT NULL DEFAULT ''").run();
   }
+  await db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email)").run();
   const contactColumns = await db.prepare("PRAGMA table_info(contacts)").all<{ name: string }>();
   if (!(contactColumns.results ?? []).some((column) => column.name === "visual_traits")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN visual_traits TEXT NOT NULL DEFAULT '[]'").run();
@@ -269,6 +277,7 @@ export async function createUser(input: {
   reading: string;
   org: string;
   avatarDataUrl: string;
+  accountEmail: string | null;
 }): Promise<{ user: MataneUser; token: string }> {
   const db = await ensureMataneDb();
   const id = crypto.randomUUID();
@@ -286,11 +295,11 @@ export async function createUser(input: {
   await db
     .prepare(
       `INSERT INTO users (
-        id, device_token, public_code, name, reading, org, avatar_data_url,
+        id, device_token, email, public_code, name, reading, org, avatar_data_url,
         location_enabled, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
     )
-    .bind(id, token, publicCode, input.name, input.reading, input.org, input.avatarDataUrl, now, now)
+    .bind(id, token, input.accountEmail, publicCode, input.name, input.reading, input.org, input.avatarDataUrl, now, now)
     .run();
   const row = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first<UserRow>();
   if (!row) throw new Error("プロフィールを作成できませんでした。");
@@ -325,6 +334,29 @@ export async function getUserByToken(token: string): Promise<UserRow | null> {
     .prepare("SELECT * FROM users WHERE device_token = ?")
     .bind(token)
     .first<UserRow>()) ?? null;
+}
+
+export async function getUserByEmail(email: string): Promise<UserRow | null> {
+  if (!email) return null;
+  const db = await ensureMataneDb();
+  return (await db
+    .prepare("SELECT * FROM users WHERE email = ?")
+    .bind(email.trim().toLowerCase())
+    .first<UserRow>()) ?? null;
+}
+
+export async function linkUserEmail(userId: string, email: string): Promise<UserRow> {
+  const db = await ensureMataneDb();
+  const normalizedEmail = email.trim().toLowerCase();
+  const existing = await db.prepare("SELECT id FROM users WHERE email = ?").bind(normalizedEmail).first<{ id: string }>();
+  if (existing && existing.id !== userId) throw new Error("EMAIL_ALREADY_LINKED");
+  await db
+    .prepare("UPDATE users SET email = ?, updated_at = ? WHERE id = ?")
+    .bind(normalizedEmail, new Date().toISOString(), userId)
+    .run();
+  const row = await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first<UserRow>();
+  if (!row) throw new Error("プロフィールを更新できませんでした。");
+  return row;
 }
 
 export function tokenFromRequest(request: Request) {

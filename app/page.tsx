@@ -1,5 +1,9 @@
 import { MataneApp } from "./matane-app";
+import { getChatGPTUser } from "./chatgpt-auth";
 
-export default function Home() {
-  return <MataneApp />;
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const account = await getChatGPTUser();
+  return <MataneApp account={account ? { email: account.email, displayName: account.displayName } : null} />;
 }

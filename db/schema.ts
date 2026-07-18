@@ -5,6 +5,7 @@ export const users = sqliteTable(
   {
     id: text("id").primaryKey(),
     deviceToken: text("device_token").notNull(),
+    email: text("email"),
     publicCode: text("public_code").notNull(),
     name: text("name").notNull(),
     reading: text("reading").notNull().default(""),
@@ -20,6 +21,7 @@ export const users = sqliteTable(
   },
   (table) => [
     uniqueIndex("users_device_token_idx").on(table.deviceToken),
+    uniqueIndex("users_email_idx").on(table.email),
     uniqueIndex("users_public_code_idx").on(table.publicCode),
   ]
 );

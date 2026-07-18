@@ -46,11 +46,33 @@ test("ships durable data and no disposable starter preview", async () => {
   assert.match(hosting, /"d1": "DB"/);
   assert.match(packageJson, /"name": "matane"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
-  assert.match(page, /<MataneApp \/>/);
+  assert.match(page, /<MataneApp account=/);
   assert.match(layout, /lang="ja"/);
   assert.match(migration, /CREATE TABLE `users`/);
   assert.match(migration, /CREATE TABLE `contacts`/);
   await assert.rejects(access(new URL("app/_sites-preview", root)));
+});
+
+test("restores the same profile from a verified email", async () => {
+  const [page, auth, sessionRoute, app, schema, migration] = await Promise.all([
+    readFile(new URL("app/page.tsx", root), "utf8"),
+    readFile(new URL("app/chatgpt-auth.ts", root), "utf8"),
+    readFile(new URL("app/api/session/route.ts", root), "utf8"),
+    readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("drizzle/0003_shocking_white_tiger.sql", root), "utf8"),
+  ]);
+  assert.match(page, /dynamic = "force-dynamic"/);
+  assert.match(auth, /oai-authenticated-user-email/);
+  assert.match(sessionRoute, /getUserByEmail/);
+  assert.match(sessionRoute, /linkUserEmail/);
+  assert.match(sessionRoute, /restoredByEmail/);
+  assert.match(app, /signin-with-chatgpt/);
+  assert.match(app, /ChatGPTでメールを確認/);
+  assert.match(app, /ログインせず体験する/);
+  assert.match(schema, /users_email_idx/);
+  assert.match(migration, /ADD `email`/);
+  assert.match(migration, /UNIQUE INDEX `users_email_idx`/);
 });
 
 test("connects faithful structured memory to photorealistic OpenAI image generation", async () => {
