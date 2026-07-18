@@ -13,7 +13,7 @@ export type MemoryAnalysis = {
 };
 
 const cautionPattern = /強引|しつこ|怖|危険|不快|ハラス|勧誘|避け|苦手|怒鳴|セクハラ|パワハラ/i;
-const visualPattern = /メガネ|眼鏡|髪|ヘア|服|シャツ|パーカー|ジャケット|帽子|表情|笑顔|雰囲気|印象|声|姿勢|背|ひげ|髭/i;
+const visualPattern = /男性|女性|男(?:性|の人)?|女(?:性|の人)?|ジェンダー|年齢|若い|若者|中年|高齢|年配|太(?:い|め)|肥満|ふくよか|ぽっちゃり|大柄|がっしり|筋肉|痩せ|細身|小柄|体格|体型|メガネ|眼鏡|髪|ヘア|服|シャツ|パーカー|ジャケット|帽子|表情|笑顔|雰囲気|印象|声|姿勢|背|ひげ|髭|\b(?:man|male|woman|female|young|middle-aged|older|elderly|fat|plus-size|heavyset|stocky|large|muscular|slim|thin|petite|build|glasses|hair|shirt|hoodie|jacket|hat|beard|tall|short)\b/i;
 const tagCandidates = [
   "AI",
   "Python",
@@ -92,7 +92,8 @@ export async function analyzeMemory(person: ContactProfile, memo: string): Promi
         instructions: [
           "あなたは、再会時に人の名前と会話を思い出す支援アプリMATANEの記憶整理担当です。",
           "自由文メモに明記された事実だけを抽出し、センシティブ属性を推測しないでください。",
-          "visualTraitsには、髪型・メガネ・服・表情・雰囲気など、メモに明記された視覚的特徴だけを入れてください。年齢・人種・性別などを推測しないでください。",
+          "visualTraitsには、メモに明記された視覚的特徴だけを入れてください。髪型・メガネ・服・表情・雰囲気に加えて、明記された性別表現・年代・体格・体型も必ず含め、意味を弱めたり美化したりせず原文に近い言葉で保持してください。",
+          "性別表現・年代・体格・体型・人種など、メモにない特徴は決して推測しないでください。",
           "注意人物の判定は必ず提案に留め、強引な勧誘・ハラスメント・威圧など明確な記述がある場合だけtrueにしてください。",
           "HUD文は日本語で各行24文字程度、合計2行。会話を始めやすい具体的な一言にしてください。",
         ].join("\n"),
@@ -169,19 +170,27 @@ export async function generateImaginedPortrait(person: ContactProfile): Promise<
     OPENAI_API_KEY?: string;
     OPENAI_IMAGE_MODEL?: string;
   };
-  if (!person.visualTraits.length) {
-    throw new Error("先に、服・髪型・メガネ・表情・雰囲気などをメモしてください。");
+  const visualNotesFromMemos = person.memos
+    .flatMap((memo) => memo.text.split(/[。！!？?]/))
+    .map((note) => compact(note, 80))
+    .filter((note) => note && visualPattern.test(note))
+    .slice(-6);
+  const portraitDetails = Array.from(new Set([...person.visualTraits, ...visualNotesFromMemos]));
+  if (!portraitDetails.length) {
+    throw new Error("先に、性別・年代・体型・服・髪型など、見た目の特徴をメモしてください。");
   }
   if (!runtime.OPENAI_API_KEY) return fallbackPortrait();
 
   const model = runtime.OPENAI_IMAGE_MODEL || "gpt-image-2";
   const prompt = [
-    "Create a clearly fictional editorial portrait inspired only by a person's written memory notes.",
+    "Create a clearly fictional but highly photorealistic portrait inspired only by a person's written memory notes.",
     "This is an AI-imagined memory aid, not a reconstruction, identification, biometric match, or claim about the real person's face.",
-    `Explicitly recorded visual details: ${person.visualTraits.join("; ")}.`,
-    "Draw a warm waist-up portrait in a refined Japanese editorial collage style: textured paper, subtle risograph grain, deep forest green, warm cream, and soft lime accents.",
-    "Keep the face gently stylized and non-photorealistic. Do not infer age, ethnicity, disability, religion, or gender identity. Do not resemble any public figure.",
-    "No words, letters, logos, watermark, frame, or UI. Centered square composition with a calm plain background.",
+    `MANDATORY explicitly recorded visual details: ${portraitDetails.join("; ")}.`,
+    "Every mandatory detail must be visibly and unambiguously reflected. If male or female presentation, age range, height, or body build is stated, depict it exactly. A stated fat, plus-size, heavyset, stocky, slim, or muscular build must be clearly visible in the silhouette and proportions.",
+    "Do not slim, beautify, idealize, soften, contradict, or swap any stated characteristic. Give equal priority to body build and gender presentation, not only hair, clothes, or facial details.",
+    "Use a natural photorealistic candid editorial-photography look with realistic skin texture, anatomy, lens depth, and soft daylight. Use a three-quarter or near-full-body composition so the stated body build is easy to see.",
+    "Do not invent age, ethnicity, disability, religion, or gender presentation when it is not stated. Do not resemble any public figure.",
+    "No words, letters, logos, watermark, frame, collage, illustration, anime styling, or UI. Centered square composition with a calm real-world background.",
   ].join("\n");
 
   const response = await fetch("https://api.openai.com/v1/images/generations", {
@@ -194,9 +203,9 @@ export async function generateImaginedPortrait(person: ContactProfile): Promise<
       model,
       prompt,
       size: "1024x1024",
-      quality: "low",
+      quality: "medium",
       output_format: "jpeg",
-      output_compression: 72,
+      output_compression: 84,
       moderation: "auto",
       n: 1,
     }),

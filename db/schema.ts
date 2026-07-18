@@ -9,6 +9,7 @@ export const users = sqliteTable(
     name: text("name").notNull(),
     reading: text("reading").notNull().default(""),
     org: text("org").notNull().default(""),
+    avatarDataUrl: text("avatar_data_url").notNull().default(""),
     latitude: real("latitude"),
     longitude: real("longitude"),
     locationAccuracy: real("location_accuracy"),

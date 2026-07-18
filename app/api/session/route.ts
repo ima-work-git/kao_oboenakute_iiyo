@@ -1,4 +1,5 @@
 import { createUser, requireUser, sessionSnapshot } from "@/db/matane";
+import { validateAvatarDataUrl } from "@/lib/profile";
 
 export async function GET(request: Request) {
   try {
@@ -14,13 +15,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as { name?: string; reading?: string; org?: string };
+    const payload = (await request.json()) as { name?: string; reading?: string; org?: string; avatarDataUrl?: string };
     const name = payload.name?.trim() || "";
     if (!name) return Response.json({ error: "名前を入力してください。" }, { status: 400 });
     const created = await createUser({
       name,
       reading: payload.reading?.trim() || "",
       org: payload.org?.trim() || "",
+      avatarDataUrl: validateAvatarDataUrl(payload.avatarDataUrl),
     });
     return Response.json({ user: created.user, contacts: [], token: created.token }, { status: 201 });
   } catch (error) {

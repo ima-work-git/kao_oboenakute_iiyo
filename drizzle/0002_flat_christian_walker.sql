@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `avatar_data_url` text DEFAULT '' NOT NULL;

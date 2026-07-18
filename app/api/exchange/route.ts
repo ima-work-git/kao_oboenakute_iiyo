@@ -6,8 +6,8 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as { code?: string };
     const code = payload.code?.trim() || "";
     if (!code) return Response.json({ error: "交換コードを入力してください。" }, { status: 400 });
-    const contacts = await exchangeContact(owner, code);
-    return Response.json({ contacts });
+    const result = await exchangeContact(owner, code);
+    return Response.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "交換できませんでした。";
     return Response.json(

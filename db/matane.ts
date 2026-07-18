@@ -11,6 +11,7 @@ export type MataneUser = {
   name: string;
   reading: string;
   org: string;
+  avatarDataUrl: string;
   locationEnabled: boolean;
   lastSeen: string | null;
   createdAt: string;
@@ -21,6 +22,7 @@ export type ContactProfile = {
   name: string;
   reading: string;
   org: string;
+  avatarDataUrl: string;
   tags: string[];
   memos: Memo[];
   facts: string[];
@@ -43,6 +45,7 @@ type UserRow = {
   name: string;
   reading: string;
   org: string;
+  avatar_data_url: string;
   latitude: number | null;
   longitude: number | null;
   location_accuracy: number | null;
@@ -58,6 +61,7 @@ type ContactRow = {
   contact_name: string;
   contact_reading: string;
   contact_org: string;
+  contact_avatar_data_url: string;
   contact_latitude: number | null;
   contact_longitude: number | null;
   contact_location_accuracy: number | null;
@@ -106,6 +110,7 @@ function toUser(row: UserRow): MataneUser {
     name: row.name,
     reading: row.reading,
     org: row.org,
+    avatarDataUrl: row.avatar_data_url,
     locationEnabled: Boolean(row.location_enabled) && isFresh(row.last_seen),
     lastSeen: row.last_seen,
     createdAt: row.created_at,
@@ -146,6 +151,7 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
     name: row.contact_name,
     reading: row.contact_reading,
     org: row.contact_org,
+    avatarDataUrl: row.contact_avatar_data_url,
     tags: parseArray<string>(row.tags),
     memos: parseArray<Memo>(row.memos),
     facts: parseArray<string>(row.facts),
@@ -218,6 +224,7 @@ export async function ensureMataneDb() {
       name TEXT NOT NULL,
       reading TEXT NOT NULL DEFAULT '',
       org TEXT NOT NULL DEFAULT '',
+      avatar_data_url TEXT NOT NULL DEFAULT '',
       latitude REAL,
       longitude REAL,
       location_accuracy REAL,
@@ -245,6 +252,10 @@ export async function ensureMataneDb() {
       "CREATE UNIQUE INDEX IF NOT EXISTS contacts_owner_target_idx ON contacts (owner_id, contact_user_id)"
     ),
   ]);
+  const userColumns = await db.prepare("PRAGMA table_info(users)").all<{ name: string }>();
+  if (!(userColumns.results ?? []).some((column) => column.name === "avatar_data_url")) {
+    await db.prepare("ALTER TABLE users ADD COLUMN avatar_data_url TEXT NOT NULL DEFAULT ''").run();
+  }
   const contactColumns = await db.prepare("PRAGMA table_info(contacts)").all<{ name: string }>();
   if (!(contactColumns.results ?? []).some((column) => column.name === "visual_traits")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN visual_traits TEXT NOT NULL DEFAULT '[]'").run();
@@ -257,6 +268,7 @@ export async function createUser(input: {
   name: string;
   reading: string;
   org: string;
+  avatarDataUrl: string;
 }): Promise<{ user: MataneUser; token: string }> {
   const db = await ensureMataneDb();
   const id = crypto.randomUUID();
@@ -274,15 +286,36 @@ export async function createUser(input: {
   await db
     .prepare(
       `INSERT INTO users (
-        id, device_token, public_code, name, reading, org,
+        id, device_token, public_code, name, reading, org, avatar_data_url,
         location_enabled, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
     )
-    .bind(id, token, publicCode, input.name, input.reading, input.org, now, now)
+    .bind(id, token, publicCode, input.name, input.reading, input.org, input.avatarDataUrl, now, now)
     .run();
   const row = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first<UserRow>();
   if (!row) throw new Error("プロフィールを作成できませんでした。");
   return { user: toUser(row), token };
+}
+
+export async function updateUserProfile(input: {
+  userId: string;
+  name: string;
+  reading: string;
+  org: string;
+  avatarDataUrl: string;
+}) {
+  const db = await ensureMataneDb();
+  const now = new Date().toISOString();
+  await db
+    .prepare(
+      `UPDATE users SET name = ?, reading = ?, org = ?, avatar_data_url = ?, updated_at = ?
+       WHERE id = ?`
+    )
+    .bind(input.name, input.reading, input.org, input.avatarDataUrl, now, input.userId)
+    .run();
+  const row = await db.prepare("SELECT * FROM users WHERE id = ?").bind(input.userId).first<UserRow>();
+  if (!row) throw new Error("プロフィールを更新できませんでした。");
+  return toUser(row);
 }
 
 export async function getUserByToken(token: string): Promise<UserRow | null> {
@@ -314,7 +347,8 @@ async function contactRows(ownerId: string) {
         c.alert_level, c.alert_suggested, c.alert_reason, c.hud_text,
         c.created_at, c.updated_at,
         u.name AS contact_name, u.reading AS contact_reading,
-        u.org AS contact_org, u.latitude AS contact_latitude,
+        u.org AS contact_org, u.avatar_data_url AS contact_avatar_data_url,
+        u.latitude AS contact_latitude,
         u.longitude AS contact_longitude,
         u.location_accuracy AS contact_location_accuracy,
         u.location_enabled AS contact_location_enabled,
@@ -367,7 +401,11 @@ export async function exchangeContact(owner: UserRow, publicCode: string) {
   if (target.id === owner.id) throw new Error("自分自身とは交換できません。");
   await addContactPair(db, owner, target);
   await addContactPair(db, target, owner);
-  return listContacts(owner.id);
+  const contacts = await listContacts(owner.id);
+  return {
+    contacts,
+    contact: contacts.find((contact) => contact.contactUserId === target.id) ?? null,
+  };
 }
 
 export async function updateLocation(input: {
@@ -499,9 +537,9 @@ export async function addDemoNearby(owner: UserRow, latitude: number, longitude:
       )
       .bind(
         JSON.stringify(["猫", "Python"]),
-        JSON.stringify([{ date: "2026-07-18", text: "猫を2匹飼っている。Pythonが得意。丸い黒縁メガネと緑のパーカーが印象的。" }]),
+        JSON.stringify([{ date: "2026-07-18", text: "40代のふくよかな男性。猫を2匹飼っている。Pythonが得意。丸い黒縁メガネと緑のパーカーが印象的。" }]),
         JSON.stringify(["猫を2匹飼っている", "Pythonが得意"]),
-        JSON.stringify(["丸い黒縁メガネ", "緑のパーカー", "穏やかな雰囲気"]),
+        JSON.stringify(["40代のふくよかな男性", "丸い黒縁メガネ", "緑のパーカー", "穏やかな雰囲気"]),
         "田中さん｜Neko Labs\n猫の話 → 2匹とも元気？",
         now,
         owner.id

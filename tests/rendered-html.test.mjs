@@ -18,6 +18,14 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /MATANEをはじめる/);
   assert.match(app, /visibilitychange/);
   assert.match(app, /AI IMAGINED PORTRAIT/);
+  assert.match(app, /useState<Tab>\("exchange"\)/);
+  assert.match(app, /QRCode\.toDataURL/);
+  assert.match(app, /searchParams\.set\("exchange"/);
+  assert.match(app, /音声入力 \/ Dictate/);
+  assert.match(app, /inputMode="text"/);
+  assert.match(app, /怖いと記録する \/ Mark as caution/);
+  assert.match(app, /友達 <small>Friends/);
+  assert.match(app, /\/api\/profile/);
   assert.match(app, /本人の顔を再現・特定するものではありません/);
   assert.match(layout, /viewportFit:\s*"cover"/);
   assert.match(css, /safe-area-inset-bottom/);
@@ -45,16 +53,24 @@ test("ships durable data and no disposable starter preview", async () => {
   await assert.rejects(access(new URL("app/_sites-preview", root)));
 });
 
-test("connects structured memory to OpenAI image generation", async () => {
-  const [openai, portraitRoute, schema] = await Promise.all([
+test("connects faithful structured memory to photorealistic OpenAI image generation", async () => {
+  const [openai, portraitRoute, schema, avatarMigration] = await Promise.all([
     readFile(new URL("lib/openai.ts", root), "utf8"),
     readFile(new URL("app/api/portrait/route.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("drizzle/0002_flat_christian_walker.sql", root), "utf8"),
   ]);
   assert.match(openai, /gpt-image-2/);
   assert.match(openai, /deterministic-demo-sketch/);
   assert.match(openai, /\/v1\/images\/generations/);
   assert.match(openai, /visualTraits/);
+  assert.match(openai, /highly photorealistic/);
+  assert.match(openai, /Do not slim, beautify, idealize/);
+  assert.match(openai, /body build is easy to see/);
+  assert.match(openai, /visualNotesFromMemos/);
+  assert.doesNotMatch(openai, /gpt-4o-mini-transcribe/);
   assert.match(portraitRoute, /generateImaginedPortrait/);
   assert.match(schema, /visual_traits/);
+  assert.match(schema, /avatarDataUrl/);
+  assert.match(avatarMigration, /avatar_data_url/);
 });
