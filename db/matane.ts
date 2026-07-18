@@ -513,6 +513,43 @@ export async function updateMemory(input: {
   return getContact(input.ownerId, input.contactUserId);
 }
 
+export async function replaceMemories(input: {
+  ownerId: string;
+  contactUserId: string;
+  memos: Memo[];
+  facts: string[];
+  visualTraits: string[];
+  tags: string[];
+  alertSuggested: boolean;
+  alertReason: string | null;
+  hudText: string;
+}) {
+  const db = await ensureMataneDb();
+  const current = await getContact(input.ownerId, input.contactUserId);
+  if (!current) throw new Error("交換済みの相手が見つかりませんでした。");
+  const cautionActive = current.alertLevel === "caution";
+  await db
+    .prepare(
+      `UPDATE contacts SET tags = ?, memos = ?, facts = ?, visual_traits = ?,
+       alert_suggested = ?, alert_reason = ?, hud_text = ?, updated_at = ?
+       WHERE owner_id = ? AND contact_user_id = ?`
+    )
+    .bind(
+      JSON.stringify(input.tags.slice(0, 8)),
+      JSON.stringify(input.memos),
+      JSON.stringify(input.facts.slice(-8)),
+      JSON.stringify(input.visualTraits.slice(-8)),
+      cautionActive ? 0 : input.alertSuggested ? 1 : 0,
+      cautionActive ? current.alertReason : input.alertReason,
+      cautionActive ? current.hudText : input.hudText,
+      new Date().toISOString(),
+      input.ownerId,
+      input.contactUserId
+    )
+    .run();
+  return getContact(input.ownerId, input.contactUserId);
+}
+
 export async function setAlert(ownerId: string, contactUserId: string, approved: boolean) {
   const db = await ensureMataneDb();
   const current = await getContact(ownerId, contactUserId);

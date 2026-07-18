@@ -21,7 +21,15 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /useState<Tab>\("exchange"\)/);
   assert.match(app, /QRCode\.toDataURL/);
   assert.match(app, /searchParams\.set\("exchange"/);
-  assert.match(app, /音声入力 \/ Dictate/);
+  assert.match(app, /キーボード標準音声入力/);
+  assert.match(app, /特徴を保存する \/ Save features/);
+  assert.match(app, /メモ原文/);
+  assert.match(app, /className={`menu-button/);
+  assert.match(app, /openFriend\(contact\.contactUserId\)/);
+  assert.match(app, /method: "PATCH"/);
+  assert.match(app, /method: "DELETE"/);
+  assert.doesNotMatch(app, /AIで記憶にする|OpenAIが事実・外見・次の話題を整理/);
+  assert.doesNotMatch(app, /className="fact-list"|className="trait-list"|className="alert-suggestion"/);
   assert.match(app, /inputMode="text"/);
   assert.match(app, /怖いと記録する \/ Mark as caution/);
   assert.match(app, /友達 <small>Friends/);
@@ -95,4 +103,19 @@ test("connects faithful structured memory to photorealistic OpenAI image generat
   assert.match(schema, /visual_traits/);
   assert.match(schema, /avatarDataUrl/);
   assert.match(avatarMigration, /avatar_data_url/);
+});
+
+test("keeps AI structure private while original notes remain editable", async () => {
+  const [app, memoryRoute, database] = await Promise.all([
+    readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/memory/route.ts", root), "utf8"),
+    readFile(new URL("db/matane.ts", root), "utf8"),
+  ]);
+  assert.match(app, /ORIGINAL NOTES/);
+  assert.match(app, /編集 \/ Edit/);
+  assert.match(app, /削除 \/ Delete/);
+  assert.match(memoryRoute, /export async function PATCH/);
+  assert.match(memoryRoute, /export async function DELETE/);
+  assert.match(memoryRoute, /replaceAndReanalyze/);
+  assert.match(database, /export async function replaceMemories/);
 });
