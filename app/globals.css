@@ -755,3 +755,206 @@ body {
   .wordmark { margin-bottom: 36px; }
   .app-shell { box-shadow: 0 0 44px rgba(35, 42, 38, .12); }
 }
+
+/* Account settings, camera exchange, and saved memory portraits. */
+.identity-images {
+  position: relative;
+  width: 72px;
+  height: 50px;
+  display: block;
+  flex: 0 0 auto;
+}
+.identity-images:not(.has-portrait) { width: 46px; }
+.identity-images > .avatar-visual { position: absolute; left: 0; top: 2px; z-index: 2; }
+.portrait-thumbnail {
+  position: absolute;
+  left: 32px;
+  top: 0;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 2px solid white;
+  border-radius: 12px;
+  background: #e7ece8;
+  box-shadow: 0 2px 8px rgba(35, 42, 38, .13);
+}
+.portrait-thumbnail img { object-fit: cover; }
+.portrait-thumbnail small {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 2;
+  border-radius: 4px;
+  background: rgba(32, 38, 34, .76);
+  color: white;
+  padding: 2px 3px;
+  font-size: 7px;
+  line-height: 1;
+}
+.identity-images.is-compact { width: 62px; height: 42px; }
+.identity-images.is-compact:not(.has-portrait) { width: 38px; }
+.identity-images.is-compact .portrait-thumbnail { left: 27px; width: 40px; height: 40px; border-radius: 10px; }
+.person-card { grid-template-columns: auto 1fr; }
+
+.camera-scan-button {
+  width: 100%;
+  min-height: 72px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--forest);
+  color: white;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.camera-scan-button > span:first-child {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 10px;
+  font-size: 19px;
+}
+.camera-scan-button > span:nth-child(2) { display: grid; gap: 4px; }
+.camera-scan-button strong { font-size: 15px; }
+.camera-scan-button small { color: #d8e8e0; font-size: 10px; }
+.camera-scan-button > b { font-size: 20px; font-weight: 400; }
+.camera-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  align-items: end;
+  background: rgba(22, 28, 24, .72);
+}
+.camera-scanner {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  padding: 18px 16px max(22px, env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: white;
+}
+.camera-scanner-heading { display: flex; align-items: start; justify-content: space-between; margin-bottom: 14px; }
+.camera-scanner-heading h2 { margin: 0; font-size: 20px; }
+.camera-scanner-heading small { color: #6d7771; font-size: 11px; }
+.camera-scanner-heading > button,
+.settings-heading > button,
+.settings-detail-heading > button:last-child {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cdd1cb;
+  border-radius: 50%;
+  background: white;
+  color: #58635d;
+  font-size: 20px;
+}
+.camera-preview {
+  position: relative;
+  aspect-ratio: 1;
+  max-height: 58svh;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #202622;
+}
+.camera-preview video { width: 100%; height: 100%; display: block; object-fit: cover; }
+.camera-preview > span { position: absolute; inset: 14%; border: 3px solid rgba(255, 255, 255, .9); border-radius: 12px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .22); }
+.camera-scanner > p { margin: 13px 0; color: #56615b; text-align: center; font-size: 13px; }
+.camera-scanner > .secondary-button { width: 100%; }
+
+.settings-home,
+.settings-detail { padding: 8px 4px; }
+.settings-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.settings-heading h2,
+.settings-detail h2 { margin: 0; font-size: 24px; }
+.settings-heading h2 small,
+.settings-detail h2 small { color: #78827c; font-size: 11px; }
+.settings-heading p { margin: 5px 0 0; color: #707a74; font-size: 12px; }
+.settings-user {
+  margin: 22px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.settings-user > div { display: grid; gap: 3px; }
+.settings-user strong { font-size: 15px; }
+.settings-user small { color: #707a74; font-size: 11px; }
+.settings-menu-list { display: grid; gap: 9px; }
+.settings-menu-list > button {
+  min-height: 70px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  color: var(--ink);
+  padding: 11px 13px;
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+}
+.settings-menu-list > button > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #eaf2ee;
+  color: var(--forest);
+  font-size: 17px;
+}
+.settings-menu-list > button > div { display: grid; gap: 4px; min-width: 0; }
+.settings-menu-list strong { font-size: 14px; }
+.settings-menu-list small { overflow: hidden; color: #6d7771; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.settings-menu-list b { color: #7b857f; font-size: 22px; font-weight: 400; }
+.settings-detail-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.settings-detail-heading > button:first-child {
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: #3d6654;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.settings-detail > p { margin: 18px 2px; color: #606b65; font-size: 13px; line-height: 1.7; }
+.email-setting-status {
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.email-setting-status > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: #eeeee9; color: #69736d; }
+.email-setting-status.is-linked > span { background: var(--forest); color: white; }
+.email-setting-status > div { display: grid; gap: 4px; min-width: 0; }
+.email-setting-status strong { font-size: 13px; }
+.email-setting-status small { color: #68736d; font-size: 11px; overflow-wrap: anywhere; }
+.settings-primary-action,
+.logout-button {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--forest);
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 750;
+}
+.settings-note { display: block; margin-top: 10px; color: #78827c; font-size: 10px; line-height: 1.6; }
+.logout-setting .logout-button { margin-top: 24px; background: #9c3f36; }
+.profile-editor .settings-detail-heading { margin-bottom: 8px; }
+.profile-editor .profile-editor-heading { margin-bottom: 20px; }

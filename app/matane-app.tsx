@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import jsQR from "jsqr";
 import QRCode from "qrcode";
 
 type MataneUser = {
@@ -27,6 +28,10 @@ type Contact = {
   memos: Array<{ date: string; text: string }>;
   facts: string[];
   visualTraits: string[];
+  portraitAvailable: boolean;
+  portraitMode: "openai" | "fallback" | null;
+  portraitDisclaimer: string;
+  portraitUpdatedAt: string | null;
   alertLevel: "normal" | "caution";
   alertSuggested: boolean;
   alertReason: string | null;
@@ -39,12 +44,15 @@ type Contact = {
 };
 
 type Tab = "exchange" | "nearby" | "friends";
+type SettingsView = "menu" | "email" | "profile" | "logout";
 type Coordinates = { latitude: number; longitude: number; accuracy: number };
 type AccountIdentity = { email: string; displayName: string };
 
 const TOKEN_KEY = "matane_device_token";
 const SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F";
 const SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F";
+const EMAIL_CHANGE_SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F%3Femail_change%3D1";
+const EMAIL_CHANGE_SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F%3Femail_change%3D1";
 const PORTRAIT_WAITING_MESSAGES = [
   "メモの特徴を一つずつ絵にしています。少しだけお待ちください。",
   "トイレに篭って待つのも作戦です。戻るころには完成しているかも。",
@@ -100,6 +108,45 @@ function PersonAvatar({ name, src, className = "", live = false }: { name: strin
   );
 }
 
+function IdentityImages({
+  name,
+  avatarSrc,
+  portraitSrc,
+  live = false,
+  compact = false,
+}: {
+  name: string;
+  avatarSrc: string;
+  portraitSrc?: string;
+  live?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <span className={`identity-images ${compact ? "is-compact" : ""} ${portraitSrc ? "has-portrait" : ""}`}>
+      <PersonAvatar name={name} src={avatarSrc} className={compact ? "mini-avatar" : "avatar"} live={live} />
+      {portraitSrc && (
+        <span className="portrait-thumbnail">
+          <Image src={portraitSrc} alt={`${name}さんのメモから作ったイメージ`} fill unoptimized sizes="64px" />
+          <small>メモ</small>
+        </span>
+      )}
+    </span>
+  );
+}
+
+function exchangeCodeFromQr(value: string) {
+  const trimmed = value.trim();
+  try {
+    const url = new URL(trimmed);
+    const code = url.searchParams.get("exchange")?.trim().toUpperCase() || "";
+    if (/^[A-Z0-9]{6}$/.test(code)) return code;
+  } catch {
+    // A plain six-character exchange code is also accepted.
+  }
+  const plainCode = trimmed.toUpperCase();
+  return /^[A-Z0-9]{6}$/.test(plainCode) ? plainCode : "";
+}
+
 async function readJson(response: Response) {
   const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
   if (!response.ok) throw new Error(String(body.error || "通信に失敗しました。"));
@@ -123,16 +170,26 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [exchangeCode, setExchangeCode] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsView, setSettingsView] = useState<SettingsView>("menu");
   const [avatarDraft, setAvatarDraft] = useState("");
   const [guestMode, setGuestMode] = useState(false);
   const [toast, setToast] = useState("");
   const [portraits, setPortraits] = useState<Record<string, { dataUrl: string; disclaimer: string; mode: "openai" | "fallback" }>>({});
   const [portraitBusyId, setPortraitBusyId] = useState<string | null>(null);
   const [portraitWaitingMessage, setPortraitWaitingMessage] = useState<string>(PORTRAIT_WAITING_MESSAGES[0]);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerStatus, setScannerStatus] = useState("カメラを準備しています…");
   const watchId = useRef<number | null>(null);
   const lastSentAt = useRef(0);
   const memoTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const autoExchangeRef = useRef("");
+  const scannerVideoRef = useRef<HTMLVideoElement | null>(null);
+  const scannerCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const scannerStreamRef = useRef<MediaStream | null>(null);
+  const scannerFrameRef = useRef<number | null>(null);
+  const portraitLoadsRef = useRef(new Set<string>());
+  const portraitObjectUrlsRef = useRef(new Set<string>());
+  const emailSettingsOpenedRef = useRef(false);
   const reviewerMode = user?.org.includes("JUDGE DEMO") ?? false;
 
   const api = useCallback(
@@ -186,6 +243,88 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     setToast("交換しました。どんな人だったかメモしましょう。 / Exchanged — add a note.");
   }, [api]);
 
+  const closeSettings = useCallback(() => {
+    setAvatarDraft(user?.avatarDataUrl || "");
+    setMenuOpen(false);
+    setSettingsView("menu");
+  }, [user?.avatarDataUrl]);
+
+  const stopScanner = useCallback(() => {
+    if (scannerFrameRef.current != null) window.cancelAnimationFrame(scannerFrameRef.current);
+    scannerFrameRef.current = null;
+    scannerStreamRef.current?.getTracks().forEach((track) => track.stop());
+    scannerStreamRef.current = null;
+    if (scannerVideoRef.current) scannerVideoRef.current.srcObject = null;
+    setScannerOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!scannerOpen || !user) return;
+    let cancelled = false;
+    let found = false;
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        scannerStreamRef.current = stream;
+        const video = scannerVideoRef.current;
+        const canvas = scannerCanvasRef.current;
+        if (!video || !canvas) throw new Error("カメラ画面を準備できませんでした。");
+        video.srcObject = stream;
+        await video.play();
+        setScannerStatus("相手のQRコードを枠の中に入れてください");
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) throw new Error("QRコードを読み取れませんでした。");
+
+        const scan = () => {
+          if (cancelled || found) return;
+          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0) {
+            const scale = Math.min(1, 720 / video.videoWidth);
+            canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+            canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+            const result = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" });
+            const code = result ? exchangeCodeFromQr(result.data) : "";
+            if (code === user.publicCode) {
+              setScannerStatus("これは自分のQRです。相手のQRを読み取ってください");
+            } else if (code) {
+              found = true;
+              setScannerStatus("QRを読み取りました。交換しています…");
+              stopScanner();
+              setBusy(true);
+              performExchange(code)
+                .catch((error: Error) => setToast(error.message))
+                .finally(() => setBusy(false));
+              return;
+            }
+          }
+          scannerFrameRef.current = window.requestAnimationFrame(scan);
+        };
+        scannerFrameRef.current = window.requestAnimationFrame(scan);
+      } catch (error) {
+        setScannerStatus("カメラを使えませんでした。設定でカメラを許可してください。");
+        setToast(error instanceof Error ? error.message : "カメラを起動できませんでした。");
+      }
+    }
+
+    startCamera();
+    return () => {
+      cancelled = true;
+      if (scannerFrameRef.current != null) window.cancelAnimationFrame(scannerFrameRef.current);
+      scannerFrameRef.current = null;
+      scannerStreamRef.current?.getTracks().forEach((track) => track.stop());
+      scannerStreamRef.current = null;
+    };
+  }, [performExchange, scannerOpen, stopScanner, user]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const stored = window.localStorage.getItem(TOKEN_KEY) || "";
@@ -203,6 +342,50 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [account, refreshSession]);
+
+  useEffect(() => {
+    if (!user || emailSettingsOpenedRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("email_change") !== "1") return;
+    emailSettingsOpenedRef.current = true;
+    params.delete("email_change");
+    const query = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+    const timer = window.setTimeout(() => {
+      setSettingsView("email");
+      setMenuOpen(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [user]);
+
+  useEffect(() => {
+    if (!token) return;
+    for (const contact of contacts) {
+      if (!contact.portraitAvailable || portraitLoadsRef.current.has(contact.contactUserId)) continue;
+      portraitLoadsRef.current.add(contact.contactUserId);
+      fetch(`/api/portrait?contactUserId=${encodeURIComponent(contact.contactUserId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("保存画像を取得できませんでした。");
+          const objectUrl = URL.createObjectURL(await response.blob());
+          portraitObjectUrlsRef.current.add(objectUrl);
+          setPortraits((current) => current[contact.contactUserId] ? current : {
+            ...current,
+            [contact.contactUserId]: {
+              dataUrl: objectUrl,
+              disclaimer: contact.portraitDisclaimer,
+              mode: contact.portraitMode === "openai" ? "openai" : "fallback",
+            },
+          });
+        })
+        .catch(() => portraitLoadsRef.current.delete(contact.contactUserId));
+    }
+  }, [contacts, token]);
+
+  useEffect(() => () => {
+    portraitObjectUrlsRef.current.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -435,6 +618,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       setUser(updated);
       setAvatarDraft(updated.avatarDataUrl);
       setMenuOpen(false);
+      setSettingsView("menu");
       setToast("プロフィールを更新しました。 / Profile updated.");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "プロフィールを更新できませんでした。");
@@ -454,7 +638,6 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       });
       const updated = body.contact as Contact;
       setContacts((current) => current.map((item) => item.contactUserId === updated.contactUserId ? updated : item));
-      clearPortrait(updated.contactUserId);
       setMemo("");
       setToast("特徴を保存しました。 / Features saved.");
     } catch (error) {
@@ -462,14 +645,6 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     } finally {
       setBusy(false);
     }
-  }
-
-  function clearPortrait(contactUserId: string) {
-    setPortraits((current) => {
-      const next = { ...current };
-      delete next[contactUserId];
-      return next;
-    });
   }
 
   function openFriend(contactUserId: string) {
@@ -491,7 +666,6 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       });
       const updated = body.contact as Contact;
       setContacts((current) => current.map((item) => item.contactUserId === updated.contactUserId ? updated : item));
-      clearPortrait(updated.contactUserId);
       setEditingMemoIndex(null);
       setEditingMemoText("");
       setToast("メモを更新しました。 / Note updated.");
@@ -512,7 +686,6 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       });
       const updated = body.contact as Contact;
       setContacts((current) => current.map((item) => item.contactUserId === updated.contactUserId ? updated : item));
-      clearPortrait(updated.contactUserId);
       setEditingMemoIndex(null);
       setEditingMemoText("");
       setToast("メモを削除しました。 / Note deleted.");
@@ -548,14 +721,26 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         method: "POST",
         body: JSON.stringify({ contactUserId: contact.contactUserId }),
       });
-      setPortraits((current) => ({
-        ...current,
-        [contact.contactUserId]: {
-          dataUrl: String(body.dataUrl),
-          disclaimer: String(body.disclaimer),
-          mode: body.mode === "openai" ? "openai" : "fallback",
-        },
-      }));
+      const updatedContact = body.contact as Contact | null;
+      if (updatedContact) {
+        portraitLoadsRef.current.add(updatedContact.contactUserId);
+        setContacts((current) => current.map((item) => item.contactUserId === updatedContact.contactUserId ? updatedContact : item));
+      }
+      setPortraits((current) => {
+        const previousUrl = current[contact.contactUserId]?.dataUrl;
+        if (previousUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(previousUrl);
+          portraitObjectUrlsRef.current.delete(previousUrl);
+        }
+        return {
+          ...current,
+          [contact.contactUserId]: {
+            dataUrl: String(body.dataUrl),
+            disclaimer: String(body.disclaimer),
+            mode: body.mode === "openai" ? "openai" : "fallback",
+          },
+        };
+      });
       setToast(body.mode === "openai" ? "OpenAIが想像ポートレートを描きました" : "デモスケッチを描きました。APIキー設定後はOpenAIで生成します");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "想像ポートレートを生成できませんでした。");
@@ -594,6 +779,19 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       await navigator.clipboard?.writeText(exchangeUrl.toString());
       setToast("交換リンクをコピーしました。 / Link copied.");
     }
+  }
+
+  function beginScanner() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setToast("このブラウザではカメラを使えません。交換コードを入力してください。");
+      return;
+    }
+    setScannerStatus("カメラを準備しています…");
+    setScannerOpen(true);
+  }
+
+  function beginEmailChange() {
+    window.location.assign(EMAIL_CHANGE_SIGN_OUT_PATH);
   }
 
   function signOutEverywhere() {
@@ -677,11 +875,11 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         </div>
         <div className="header-actions">
           <button className={`status-pill ${locationActive ? "is-live" : ""}`} onClick={locationActive ? disableLocation : enableLocation}>
-            <span /> {locationActive ? "近く ON" : "近く OFF"}
+            <span /> {locationActive ? "位置共有中" : "位置共有OFF"}
           </button>
           <button
             className={`menu-button ${menuOpen ? "is-open" : ""}`}
-            onClick={() => { setAvatarDraft(user.avatarDataUrl); setMenuOpen(true); }}
+            onClick={() => { setAvatarDraft(user.avatarDataUrl); setSettingsView("menu"); setMenuOpen(true); }}
             aria-label="メニューを開く / Open menu"
             aria-expanded={menuOpen}
           >
@@ -701,17 +899,17 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               </div>
             )}
             <div className="hero-panel">
-              <h1>{nearbyContacts.length ? `${nearbyContacts.length}人が近くにいます` : "近くの友達を探す"}<small>{nearbyContacts.length ? `${nearbyContacts.length} friends nearby` : "Find nearby friends"}</small></h1>
-              <p>{locationActive ? locationLabel : "この会場にいる間だけ、位置情報を1時間共有します。座標は友達にも表示されません。"}</p>
+              <h1>会場モード <small>Venue mode</small></h1>
+              <p>{locationActive ? `${nearbyContacts.length}人が近くにいます。${locationLabel}` : "この会場にいる間だけ、位置情報を1時間共有します。座標は友達にも表示されません。"}</p>
               <button className="radar-button" onClick={locationActive ? disableLocation : enableLocation}>
                 <span className="location-mark" aria-hidden="true">⌖</span>
-                <strong>{locationActive ? "近くの共有を止める" : "近くの友達を探す"}</strong>
+                <strong>{locationActive ? "位置共有を止める" : "1時間だけ位置共有する"}</strong>
                 <small>{locationActive ? "別タブ中は更新が遅くなる場合があります" : "位置情報の許可が必要です"}</small>
               </button>
             </div>
 
             <div className="section-heading">
-              <div><h2>近くの友達 <small>Nearby friends</small></h2></div>
+              <div><h2>近くにいる友達 <small>Friends nearby</small></h2></div>
               <span>{nearbyContacts.length}人</span>
             </div>
 
@@ -719,7 +917,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               <div className="nearby-list">
                 {nearbyContacts.map((contact) => (
                   <button type="button" className={`person-card ${contact.alertLevel === "caution" ? "is-caution" : ""}`} key={contact.contactUserId} onClick={() => openFriend(contact.contactUserId)}>
-                    <PersonAvatar name={contact.name} src={contact.avatarDataUrl} className="avatar" live />
+                    <IdentityImages name={contact.name} avatarSrc={contact.avatarDataUrl} portraitSrc={portraits[contact.contactUserId]?.dataUrl} live />
                     <div className="person-main">
                       <div className="person-title">
                         <div><h3>{contact.name}</h3><p>{contact.reading && `${contact.reading} · `}{contact.org || "所属未登録 / No organization"}</p></div>
@@ -756,7 +954,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               <div className="contact-grid">
                 {contacts.map((contact) => (
                   <button className={`contact-row ${selectedId === contact.contactUserId ? "is-selected" : ""}`} key={contact.contactUserId} onClick={() => openFriend(contact.contactUserId)}>
-                    <PersonAvatar name={contact.name} src={contact.avatarDataUrl} className="mini-avatar" />
+                    <IdentityImages name={contact.name} avatarSrc={contact.avatarDataUrl} portraitSrc={portraits[contact.contactUserId]?.dataUrl} compact />
                     <span className="contact-copy"><strong>{contact.name}</strong><small>{contact.reading && `${contact.reading} · `}{contact.org || "所属未登録 / No organization"}</small><span>{contact.memos.length ? `${contact.memos.length}件のメモ / ${contact.memos.length} notes` : "メモを追加 / Add a note"}</span></span>
                     <b>›</b>
                   </button>
@@ -861,8 +1059,24 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         {tab === "exchange" && (
           <section className="screen exchange-screen">
             <div className="screen-intro"><h1>友達と交換 <small>Exchange</small></h1></div>
+            <button type="button" className="camera-scan-button" onClick={beginScanner} disabled={busy}>
+              <span aria-hidden="true">▣</span>
+              <span><strong>カメラで相手のQRを読む</strong><small>Scan their QR code</small></span>
+              <b>→</b>
+            </button>
+            {scannerOpen && (
+              <div className="camera-overlay" role="dialog" aria-modal="true" aria-label="QRコードをカメラで読み取る">
+                <section className="camera-scanner">
+                  <div className="camera-scanner-heading"><div><h2>相手のQRを読む</h2><small>Scan their QR code</small></div><button type="button" onClick={stopScanner} aria-label="カメラを閉じる">×</button></div>
+                  <div className="camera-preview"><video ref={scannerVideoRef} muted playsInline /><span aria-hidden="true" /></div>
+                  <canvas ref={scannerCanvasRef} hidden />
+                  <p role="status">{scannerStatus}</p>
+                  <button type="button" className="secondary-button" onClick={stopScanner}>閉じる / Close</button>
+                </section>
+              </div>
+            )}
             <div className="qr-card">
-              <div className="qr-heading"><p>相手にこの画面を見せてください</p></div>
+              <div className="qr-heading"><p>自分のQRを相手に見せる</p></div>
               <div className="qr-frame">
                 {qrDataUrl ? <Image className="qr-image" src={qrDataUrl} alt="MATANE交換用QRコード" width={360} height={360} unoptimized priority /> : <span>QRを作成中…</span>}
               </div>
@@ -881,29 +1095,63 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       </div>
 
       {menuOpen && (
-        <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="自分の登録情報" onClick={() => { setAvatarDraft(user.avatarDataUrl); setMenuOpen(false); }}>
+        <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="設定" onClick={closeSettings}>
           <aside className="profile-drawer" onClick={(event) => event.stopPropagation()}>
-            <form className="profile-editor" onSubmit={updateProfile}>
-              <div className="profile-editor-heading"><div><h2>自分の登録情報 <small>My profile</small></h2></div><button type="button" onClick={() => { setAvatarDraft(user.avatarDataUrl); setMenuOpen(false); }} aria-label="閉じる / Close">×</button></div>
-              <div className={`account-panel ${user.accountEmail ? "is-linked" : ""}`}>
-                <span>{user.accountEmail ? "✓" : "✉"}</span>
-                <div><strong>{user.accountEmail ? "メール連携済み / EMAIL LINKED" : "メールを連携 / LINK EMAIL"}</strong><small>{user.accountEmail || "別端末やシークレットモードでも復元できます"}</small></div>
-                {account ? <button type="button" onClick={signOutEverywhere}>ログアウト<br /><small>Sign out</small></button> : <a href={SIGN_IN_PATH}>{user.accountEmail ? "ログイン" : "連携する"}<br /><small>{user.accountEmail ? "Sign in" : "Link"}</small></a>}
-              </div>
-              <label className="avatar-upload"><PersonAvatar name={user.name} src={avatarDraft} className="avatar-preview" /><span><strong>アイコン画像</strong><small>Profile photo · Optional</small></span><b>変更 / Change</b><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseAvatar(event.target.files?.[0])} /></label>
-              {avatarDraft && <button type="button" className="remove-avatar" onClick={() => setAvatarDraft("")}>画像を外す / Remove photo</button>}
-              <label>名前 / Name<input name="name" required defaultValue={user.name} autoComplete="name" /></label>
-              <label>ふりがな / Reading <small>任意 / Optional</small><input name="reading" defaultValue={user.reading} /></label>
-              <label>所属 / Organization<input name="org" defaultValue={user.org} autoComplete="organization" /></label>
-              <button className="primary-button" disabled={busy}>{busy ? "保存中… / Saving…" : "変更を保存 / Save changes"}<span>→</span></button>
-            </form>
+            {settingsView === "menu" && (
+              <section className="settings-home">
+                <div className="settings-heading"><div><h2>設定 <small>Settings</small></h2><p>{user.name}さんのアカウント</p></div><button type="button" onClick={closeSettings} aria-label="閉じる / Close">×</button></div>
+                <div className="settings-user"><PersonAvatar name={user.name} src={user.avatarDataUrl} className="avatar-preview" /><div><strong>{user.name}</strong><small>{user.org || "所属未登録"}</small></div></div>
+                <div className="settings-menu-list">
+                  <button type="button" onClick={() => setSettingsView("email")}><span>✉</span><div><strong>メール連携・変更</strong><small>{user.accountEmail || "メール未連携"}</small></div><b>›</b></button>
+                  <button type="button" onClick={() => { setAvatarDraft(user.avatarDataUrl); setSettingsView("profile"); }}><span>○</span><div><strong>プロフィール設定</strong><small>アイコン・名前・所属</small></div><b>›</b></button>
+                  <button type="button" onClick={() => setSettingsView("logout")}><span>↪</span><div><strong>ログアウト</strong><small>この端末のアカウントを終了</small></div><b>›</b></button>
+                </div>
+              </section>
+            )}
+
+            {settingsView === "email" && (
+              <section className="settings-detail">
+                <div className="settings-detail-heading"><button type="button" onClick={() => setSettingsView("menu")}>‹ 戻る</button><button type="button" onClick={closeSettings} aria-label="閉じる / Close">×</button></div>
+                <h2>メール連携・変更 <small>Email</small></h2>
+                <div className={`email-setting-status ${user.accountEmail ? "is-linked" : ""}`}><span>{user.accountEmail ? "✓" : "✉"}</span><div><strong>{user.accountEmail ? "連携中のメール" : "メール未連携"}</strong><small>{user.accountEmail || "別端末でも同じプロフィールを使えるようになります"}</small></div></div>
+                <p>ChatGPTで確認されたメールだけを連携します。MATANEにパスワードは保存しません。</p>
+                {account ? (
+                  <button type="button" className="settings-primary-action" onClick={beginEmailChange}>別のメールに変更する</button>
+                ) : (
+                  <a className="settings-primary-action" href={EMAIL_CHANGE_SIGN_IN_PATH}>{user.accountEmail ? "メールを変更・再連携する" : "メールを連携する"}</a>
+                )}
+                <small className="settings-note">変更時はいったんChatGPTからログアウトし、新しいメールで確認します。</small>
+              </section>
+            )}
+
+            {settingsView === "profile" && (
+              <form className="profile-editor" onSubmit={updateProfile}>
+                <div className="settings-detail-heading"><button type="button" onClick={() => { setAvatarDraft(user.avatarDataUrl); setSettingsView("menu"); }}>‹ 戻る</button><button type="button" onClick={closeSettings} aria-label="閉じる / Close">×</button></div>
+                <div className="profile-editor-heading"><div><h2>プロフィール設定 <small>Profile</small></h2></div></div>
+                <label className="avatar-upload"><PersonAvatar name={user.name} src={avatarDraft} className="avatar-preview" /><span><strong>アイコン画像</strong><small>Profile photo · Optional</small></span><b>変更 / Change</b><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseAvatar(event.target.files?.[0])} /></label>
+                {avatarDraft && <button type="button" className="remove-avatar" onClick={() => setAvatarDraft("")}>画像を外す / Remove photo</button>}
+                <label>名前 / Name<input name="name" required defaultValue={user.name} autoComplete="name" /></label>
+                <label>ふりがな / Reading <small>任意 / Optional</small><input name="reading" defaultValue={user.reading} /></label>
+                <label>所属 / Organization<input name="org" defaultValue={user.org} autoComplete="organization" /></label>
+                <button className="primary-button" disabled={busy}>{busy ? "保存中… / Saving…" : "変更を保存 / Save changes"}<span>→</span></button>
+              </form>
+            )}
+
+            {settingsView === "logout" && (
+              <section className="settings-detail logout-setting">
+                <div className="settings-detail-heading"><button type="button" onClick={() => setSettingsView("menu")}>‹ 戻る</button><button type="button" onClick={closeSettings} aria-label="閉じる / Close">×</button></div>
+                <h2>ログアウト <small>Sign out</small></h2>
+                <p>この端末のMATANEをログアウトします。メール連携済みなら、もう一度ログインして復元できます。</p>
+                <button type="button" className="logout-button" onClick={signOutEverywhere}>ログアウトする / Sign out</button>
+              </section>
+            )}
           </aside>
         </div>
       )}
 
       <nav className="bottom-nav" aria-label="メインメニュー / Main menu">
         <button className={tab === "exchange" ? "active" : ""} onClick={() => setTab("exchange")}><span className="nav-exchange">↔</span><b>交換<small>Exchange</small></b></button>
-        <button className={tab === "nearby" ? "active" : ""} onClick={() => setTab("nearby")}><span aria-hidden="true">⌖</span><b>近く<small>Nearby</small></b></button>
+        <button className={tab === "nearby" ? "active" : ""} onClick={() => setTab("nearby")}><span aria-hidden="true">⌖</span><b>近くの人<small>Nearby</small></b></button>
         <button className={tab === "friends" ? "active" : ""} onClick={() => setTab("friends")}><span className="nav-memory">○</span><b>友達<small>Friends</small></b></button>
       </nav>
 

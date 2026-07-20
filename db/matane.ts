@@ -28,6 +28,10 @@ export type ContactProfile = {
   memos: Memo[];
   facts: string[];
   visualTraits: string[];
+  portraitAvailable: boolean;
+  portraitMode: "openai" | "fallback" | null;
+  portraitDisclaimer: string;
+  portraitUpdatedAt: string | null;
   alertLevel: "normal" | "caution";
   alertSuggested: boolean;
   alertReason: string | null;
@@ -73,6 +77,10 @@ type ContactRow = {
   memos: string;
   facts: string;
   visual_traits: string;
+  portrait_key: string;
+  portrait_mode: string;
+  portrait_disclaimer: string;
+  portrait_updated_at: string | null;
   alert_level: string;
   alert_suggested: number;
   alert_reason: string | null;
@@ -389,6 +397,10 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
     memos: parseArray<Memo>(row.memos),
     facts: parseArray<string>(row.facts),
     visualTraits: parseArray<string>(row.visual_traits),
+    portraitAvailable: Boolean(row.portrait_key),
+    portraitMode: row.portrait_mode === "openai" || row.portrait_mode === "fallback" ? row.portrait_mode : null,
+    portraitDisclaimer: row.portrait_disclaimer,
+    portraitUpdatedAt: row.portrait_updated_at,
     alertLevel: row.alert_level === "caution" ? "caution" : "normal",
     alertSuggested: Boolean(row.alert_suggested),
     alertReason: row.alert_reason,
@@ -475,6 +487,10 @@ export async function ensureMataneDb() {
       memos TEXT NOT NULL DEFAULT '[]',
       facts TEXT NOT NULL DEFAULT '[]',
       visual_traits TEXT NOT NULL DEFAULT '[]',
+      portrait_key TEXT NOT NULL DEFAULT '',
+      portrait_mode TEXT NOT NULL DEFAULT '',
+      portrait_disclaimer TEXT NOT NULL DEFAULT '',
+      portrait_updated_at TEXT,
       alert_level TEXT NOT NULL DEFAULT 'normal',
       alert_suggested INTEGER NOT NULL DEFAULT 0,
       alert_reason TEXT,
@@ -497,6 +513,18 @@ export async function ensureMataneDb() {
   const contactColumns = await db.prepare("PRAGMA table_info(contacts)").all<{ name: string }>();
   if (!(contactColumns.results ?? []).some((column) => column.name === "visual_traits")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN visual_traits TEXT NOT NULL DEFAULT '[]'").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_key")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_key TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_mode")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_mode TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_disclaimer")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_disclaimer TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_updated_at")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_updated_at TEXT").run();
   }
   await seedDemoUsers(db);
   return db;
@@ -711,6 +739,7 @@ async function contactRows(ownerId: string) {
     .prepare(
       `SELECT
         c.owner_id, c.contact_user_id, c.tags, c.memos, c.facts, c.visual_traits,
+        c.portrait_key, c.portrait_mode, c.portrait_disclaimer, c.portrait_updated_at,
         c.alert_level, c.alert_suggested, c.alert_reason, c.hud_text,
         c.created_at, c.updated_at,
         u.name AS contact_name, u.reading AS contact_reading,
@@ -805,6 +834,42 @@ export async function updateLocation(input: {
 export async function getContact(ownerId: string, contactUserId: string) {
   const contacts = await listContacts(ownerId);
   return contacts.find((contact) => contact.contactUserId === contactUserId) ?? null;
+}
+
+export async function getContactPortrait(ownerId: string, contactUserId: string) {
+  const db = await ensureMataneDb();
+  return (await db
+    .prepare(
+      `SELECT portrait_key, portrait_mode, portrait_disclaimer, portrait_updated_at
+       FROM contacts WHERE owner_id = ? AND contact_user_id = ?`
+    )
+    .bind(ownerId, contactUserId)
+    .first<{
+      portrait_key: string;
+      portrait_mode: string;
+      portrait_disclaimer: string;
+      portrait_updated_at: string | null;
+    }>()) ?? null;
+}
+
+export async function saveContactPortrait(input: {
+  ownerId: string;
+  contactUserId: string;
+  key: string;
+  mode: "openai" | "fallback";
+  disclaimer: string;
+}) {
+  const db = await ensureMataneDb();
+  const now = new Date().toISOString();
+  const result = await db
+    .prepare(
+      `UPDATE contacts SET portrait_key = ?, portrait_mode = ?, portrait_disclaimer = ?,
+       portrait_updated_at = ?, updated_at = ? WHERE owner_id = ? AND contact_user_id = ?`
+    )
+    .bind(input.key, input.mode, input.disclaimer, now, now, input.ownerId, input.contactUserId)
+    .run();
+  if (!result.meta.changes) throw new Error("交換済みの相手が見つかりませんでした。");
+  return getContact(input.ownerId, input.contactUserId);
 }
 
 export async function updateMemory(input: {

@@ -44,7 +44,16 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /\/api\/profile/);
   assert.match(app, /本人の顔を再現・特定するものではありません/);
   assert.match(app, /友達と交換/);
-  assert.match(app, /近くの友達を探す/);
+  assert.match(app, /会場モード/);
+  assert.match(app, /1時間だけ位置共有する/);
+  assert.match(app, /近くの人<small>Nearby/);
+  assert.match(app, /メール連携・変更/);
+  assert.match(app, /プロフィール設定/);
+  assert.match(app, /ログアウトする \/ Sign out/);
+  assert.match(app, /カメラで相手のQRを読む/);
+  assert.match(app, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(app, /jsQR\(/);
+  assert.match(app, /IdentityImages/);
   assert.doesNotMatch(app, /CAMERALESS CONNECTION|REUNION RADAR|ONE-TIME EXCHANGE|AI IMAGINED PORTRAIT|ORIGINAL NOTES|SHOW & SCAN|MY PROFILE/);
   assert.match(css, /Calm, familiar mobile UI/);
   assert.match(css, /\.bottom-nav[\s\S]*background: rgba\(255, 255, 255, \.97\)/);
@@ -100,11 +109,13 @@ test("restores the same profile from a verified email", async () => {
 });
 
 test("connects faithful structured memory to photorealistic OpenAI image generation", async () => {
-  const [openai, portraitRoute, schema, avatarMigration] = await Promise.all([
+  const [openai, portraitRoute, schema, avatarMigration, portraitMigration, hosting] = await Promise.all([
     readFile(new URL("lib/openai.ts", root), "utf8"),
     readFile(new URL("app/api/portrait/route.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("drizzle/0002_flat_christian_walker.sql", root), "utf8"),
+    readFile(new URL("drizzle/0004_nostalgic_beyonder.sql", root), "utf8"),
+    readFile(new URL(".openai/hosting.json", root), "utf8"),
   ]);
   assert.match(openai, /gpt-image-2/);
   assert.match(openai, /deterministic-demo-sketch/);
@@ -119,6 +130,12 @@ test("connects faithful structured memory to photorealistic OpenAI image generat
   assert.match(schema, /visual_traits/);
   assert.match(schema, /avatarDataUrl/);
   assert.match(avatarMigration, /avatar_data_url/);
+  assert.match(portraitRoute, /export async function GET/);
+  assert.match(portraitRoute, /media\.put/);
+  assert.match(portraitRoute, /saveContactPortrait/);
+  assert.match(schema, /portraitKey/);
+  assert.match(portraitMigration, /portrait_key/);
+  assert.match(hosting, /"r2": "MEDIA"/);
 });
 
 test("keeps AI structure private while original notes remain editable", async () => {
