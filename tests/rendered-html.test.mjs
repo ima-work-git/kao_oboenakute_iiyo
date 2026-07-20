@@ -21,7 +21,8 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, />Hello Again</);
   assert.match(i18n, /Never worry about remembering faces/);
   assert.match(i18n, /"onboarding\.headline": "名前を思い出せなくても、また話せる。"/);
-  assert.doesNotMatch(i18n, /名前を思い出せなくても、\\nまた話せる。/);
+  assert.doesNotMatch(i18n, /"onboarding\.headline": [^\n]*\\n/);
+  assert.doesNotMatch(app, /onboarding\.headline"\)\.split/);
   assert.match(i18n, /日本語/);
   assert.match(i18n, /English/);
   assert.match(i18n, /简体中文/);
@@ -39,7 +40,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /document\.documentElement\.lang/);
   assert.match(css, /\.language-button/);
   assert.match(css, /\.language-picker/);
-  assert.match(css, /\.is-japanese-single-line[\s\S]*white-space: nowrap/);
+  assert.match(css, /\.onboarding-copy h1[^\n]+text-wrap: balance/);
   assert.match(css, /\.onboarding-language[\s\S]*width: min\(calc\(100% - 32px\), 1070px\)/);
   assert.match(app, /visibilitychange/);
   assert.match(ui, /メモから作るイメージ/);
