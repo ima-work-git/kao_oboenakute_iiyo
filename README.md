@@ -4,130 +4,198 @@
 >
 > **顔が覚えられない同志よ、もうそのストレスは抱えなくていい。**
 
-Hello Againは、一度だけ連絡先を交換した人が別の会場で近くにいると、名前と自分のメモをそっと思い出させてくれる再会支援アプリです。
+Hello Again is a mobile-first reunion assistant for people who struggle to remember faces or names. Exchange once by QR code or short code. At a later event, the app can remind you when an exchanged friend is nearby and restore the private context you saved about them—without facial recognition, continuous location tracking, or dedicated hardware.
 
-**使うのはスマホだけ。** スマートグラス、専用Bluetooth機器、PCへの常時接続、顔認証カメラは必要ありません。普段使っているスマホのブラウザと位置情報だけで動きます。
+## OpenAI Build Week submission
 
-初回起動時に端末の優先言語を候補として表示し、画面右上の `LANG` からいつでも変更できます。日本語・英語・簡体字中国語・韓国語・スペイン語・フランス語・ドイツ語・ポルトガル語に対応し、選択した言語だけを表示します。
+- **Track:** Apps for Your Life
+- **Live judge demo:** [matane-reunion-2026.fumiyaa.chatgpt.site](https://matane-reunion-2026.fumiyaa.chatgpt.site)
+- **Public demo video:** [YouTube — 2:42](https://youtu.be/KEK5DcMCCTo)
+- **Source:** [github.com/ima-work-git/kao_oboenakute_iiyo](https://github.com/ima-work-git/kao_oboenakute_iiyo)
+- **Primary Codex `/feedback` Session ID:** `019f7384-363b-7382-823e-3d7e8363976b`
+- **Primary platform:** Smartphone web browser; no installation or external device required
 
-## 今すぐ審査デモ
+The judge demo is free, requires no email registration, and stays usable without granting location access. On the first screen, select English and choose **Start judge demo**.
 
-公開版: [https://matane-reunion-2026.fumiyaa.chatgpt.site](https://matane-reunion-2026.fumiyaa.chatgpt.site)
+## The problem
 
-最初に表示言語を選び、ログイン画面の **「審査デモを開始」** を押してください。メール登録も位置情報の許可も不要です。
+Meeting someone for the second time can be more stressful than meeting them for the first. Their name does not come back, their profile photo may be years old or carefully posed, and asking again can make a promising conversation stall. This affects networking events, conference breaks, community gatherings, and business meetings—and it disproportionately burdens people who already struggle with face or name memory.
 
-審査デモには次の状態を用意しています。
+Hello Again brings back the useful context at the moment of reunion. It treats memory support as a product problem, not a personal failure.
 
-- すでに20人の友達と交換済み
-- 自分は[渋谷ソラスタコンファレンス](https://www.google.com/maps/search/?api=1&query=35.6564031%2C139.6964821)に参加中
-- 20人のうち10人が同じ会場の半径150m以内にいる
-- 全20人に、服装・髪型・体型・メガネ・アクセサリーなど、ひと目で区別しやすい架空の特徴メモを登録済み
-- 特徴メモを使い、OpenAIで実写風の「想像ポートレート」を生成できる
+## What the working product does
 
-### 60秒デモシナリオ
+- Exchanges profiles once using a QR code, camera scan, or six-character code.
+- Stores a private original note, nickname, exchange history, and optional caution flag for each friend.
+- Accepts the phone keyboard's built-in dictation, so notes appear in real time without a separate speech service.
+- Registers one location snapshot only after the user explicitly taps the button.
+- Expires that snapshot after one hour and never follows movement in real time.
+- Shows only exchanged friends within 150 meters; exact coordinates are never returned to another user or to the client UI.
+- Uses GPT-5.6 to turn free-form memory notes into structured, safety-conscious internal data.
+- Uses GPT Image 2 to create clearly fictional, photorealistic memory aids from written visual details.
+- Keeps the original note editable and hides the internal AI structure from the user.
+- Supports Japanese, English, Simplified Chinese, Korean, Spanish, French, German, and Portuguese.
+- Restores a verified-email profile across devices while still providing a one-tap, account-free judge demo.
 
-1. 「審査デモを開始」を押す。
-2. 「近く」に10人が表示されることを確認する。
-3. 赤いニット帽の黒田さん、ピンクのボブヘアの森川さん、緑のアロハシャツの大橋さんなど、気になる友達を押す。
-4. 以前に自分が書いたメモ原文と、会話のきっかけを確認する。
-5. 「実写風に想像して描く」を押し、メモに忠実なAI想像ポートレートを生成する。
-6. メモの追加・編集・削除、または「怖いと記録する」を試す。
-7. 「友達」タブで、近くにいない10人を含む全20人を確認する。
+## Two-minute judge path
 
-## Hello Againが生む効果
+1. Open the [live demo](https://matane-reunion-2026.fumiyaa.chatgpt.site).
+2. Select **English**, then choose **Start judge demo**. No signup or location permission is needed.
+3. Open **Nearby**. Ten of twenty fictional friends are already within 150 meters of Shibuya Solasta Conference.
+4. Select **Yuto Kuroda** and review the original private note: tall, slim, red knit cap, round silver glasses, and mustard overshirt.
+5. Generate the face and full-body imagined portraits. They are fictional memory aids, not reconstructions of a real person.
+6. Edit or delete the note, add a private nickname, or mark a private caution flag.
+7. Open **Friends** to see all twenty exchanged contacts, including the ten who are not nearby.
+8. Return to **Exchange** to inspect the QR and camera-based exchange flow.
 
-人の顔や名前を覚えることが苦手でも、再会の直前に必要な文脈が戻れば、会話は自然に再開できます。
+All demo names, organizations, notes, and image prompts are fictional and English-only. A deterministic fallback keeps the core judge path available if an external AI call is temporarily unavailable.
 
-- **懇親会**: 「以前お会いしましたよね」で止まらず、前回の話題からすぐ話せる
-- **カンファレンスの休憩時間**: 会いたかった相手が近くにいると分かり、短い休憩を商談や協業のきっかけに変えられる
-- **社外会議・交流会**: 所属、関心、前回の約束を思い出し、紹介・相談・フォローアップを滑らかに進められる
-- **ビジネス機会**: 名前を思い出すための焦りを減らし、相手の課題や次のアクションに集中できる
-- **心理的安全性**: 苦手な相手には自分だけの注意フラグを付け、無理に近づかない判断もできる
+## How OpenAI is used
 
-Hello Againは「記憶力が高い人だけが得をする交流」をなくし、顔と名前を覚える負担を、本人の努力ではなくプロダクトで軽くします。
+### GPT-5.6 in the product
 
-## 肖像権とプライバシーへの配慮
-
-Hello Againは本人の写真を撮影・保存・照合しません。顔認証や生体識別も行いません。
-
-AI画像は、利用者が書いた「赤い帽子」「丸いメガネ」「緑のパーカー」などの特徴から作る、明確に架空の**想像ポートレート**です。本人の顔の再現、特定、照合を目的とせず、その注意書きを画面に常時表示します。実在する顔写真を利用しないことで、肖像権侵害や生体情報漏えいのリスクを抑え、安心して使える設計を目指しています。
-
-位置情報も次の原則で扱います。
-
-- 現在地は利用者が登録ボタンを押した時点で1回だけ取得し、リアルタイム追跡しない
-- 登録地点は1時間で失効し、移動後の更新も利用者が明示的にボタンを押した場合だけ
-- 交換済みの相手以外は表示しない
-- 相手の緯度・経度は画面にもAPIにも返さない
-- 表示するのは「近くにいる」と概算距離だけ
-- メモと注意フラグは自分だけに表示
-
-## 実利用フロー
-
-1. スマホでプロフィールを登録する。
-2. 初対面でQRまたは6文字コードを一度だけ交換する。
-3. 相手の特徴や会話を、自分だけのメモとして残す。スマホ標準キーボードの音声入力も使える。
-4. 次のイベントで双方がHello Againを開き、今いる場所を1回だけ登録する。
-5. 半径150m以内に交換済みの相手がいれば、名前とメモ原文を表示する。
-6. メモを見て自然に話しかけ、前回の続きから会話やビジネスを進める。
-
-## 将来構想：ネイティブアプリ化
-
-現在は、審査員や利用者がインストール不要ですぐ試せるスマホWebアプリです。次の段階ではiOS・Androidのネイティブアプリにし、**スマホ内蔵Bluetooth Low Energy（BLE）**を位置情報と組み合わせます。専用ビーコンなどの外部機器は使いません。
-
-ネイティブアプリ化で期待できるメリット:
-
-- **屋内での再会検知を強化**: GPSが不安定な会議室や展示会場では、位置情報で会場を絞り、BLEで交換済み端末が本当に近くにいることを補助確認する
-- **アプリを開き続けなくてよい**: OSのバックグラウンド処理とプッシュ通知を使い、許可された範囲で再会を知らせる
-- **省電力化**: 常時GPSではなく、会場モード中だけ低頻度のBLEスキャン・広告と粗い位置情報を組み合わせ、電池消費を抑える
-- **通知の即時性**: 懇親会や休憩時間の短いチャンスを逃さず、相手が近くに来たタイミングで知らせる
-- **オフライン耐性**: 交換済みプロフィールと自分のメモを端末内に暗号化して保持し、通信が混雑する会場でも参照しやすくする
-- **より自然なUX**: ホーム画面ウィジェット、通知からのメモ表示、カメラによるQR交換など、スマホOSに馴染む操作を提供する
-
-BLEでは氏名や固定IDを周囲へ送信せず、短時間で変わる匿名IDを使い、サーバー側で「双方が交換済みかつ会場モードに明示同意中」の場合だけ照合する設計を想定しています。検知はOSのバックグラウンド制約に従うため、常時・完全な発見を保証するのではなく、位置情報とBLEを組み合わせて再会の確率を高めます。
-
-```text
-粗い位置情報で同じ会場を判定
-        ↓
-BLEで交換済みスマホの近さを補助確認
-        ↓
-匿名IDをサーバーで照合
-        ↓
-双方が同意中ならプッシュ通知
-```
-
-## OpenAIの使い方
-
-`OPENAI_API_KEY` がある場合、Responses APIのStructured Outputsで自由記述メモを内部的に整理し、Image APIの `gpt-image-2` で実写風の想像ポートレートを生成します。
-
-構造化結果はUIに露出させず、利用者が入力したメモ原文を中心に表示します。画像は一時表示のみで保存しません。APIキー未設定時も、決定的フォールバックで審査デモの基本操作を確認できます。
+When a user saves a free-form note, the app sends it to the Responses API with a strict JSON schema. GPT-5.6 extracts only explicitly stated facts, tags, visual traits, an optional caution suggestion, and two concise reunion prompts. The prompt prohibits inventing sensitive attributes and keeps any caution decision as a suggestion—the user makes the final choice.
 
 ```env
-OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-5.6-luna
+```
+
+The model's structured result is deliberately not shown as an opaque profile about the other person. The interface centers the user's editable original note; structure is used internally to make retrieval and image prompting consistent.
+
+### GPT Image 2 in the product
+
+The Image API receives only written visual traits, such as “bright red knit cap,” “round silver glasses,” or an explicitly stated body build. It generates a face view and a full-body view so clothing, build, and hairstyle remain visible. The prompt explicitly prevents identity reconstruction, public-figure resemblance, unstated sensitive attributes, beautification that contradicts the note, logos, and watermarks.
+
+```env
+OPENAI_IMAGE_MODEL=gpt-image-2
+```
+
+Generated images are presented as **AI-imagined** aids. The app does not photograph, store, compare, identify, or recognize a real face.
+
+## How we collaborated with Codex
+
+Codex was the development partner throughout the main build thread, not a decorative mention added at submission time. The primary evidence thread is the Session ID shown above.
+
+### Where Codex accelerated the work
+
+- Translated the original concept into a deployable smartphone-only architecture.
+- Implemented the responsive React interface, multilingual text system, QR generation and camera scanning, profile flows, hamburger-menu account settings, and mobile-safe navigation.
+- Built Cloudflare D1 schemas and migrations for users, contacts, private notes, exchange history, one-hour location snapshots, profile restoration, and portrait choices.
+- Implemented API routes for sessions, profiles, exchange, nearby matching, memory CRUD, location consent, alerts, and image generation.
+- Integrated the Responses API with Structured Outputs and the Image API with fidelity and safety constraints.
+- Created twenty fictional English judge personas and a deterministic demo path.
+- Reproduced and fixed visual regressions across phone and desktop layouts.
+- Added regression tests, ran builds, diagnosed deployment issues, and published iterative Sites versions.
+- Researched browser Bluetooth and background-location limits before the product pivot.
+- Helped script, render, validate, and publish the 2:42 English demo video.
+
+### Human product, engineering, and design decisions
+
+The team made the consequential choices. We rejected a Web Bluetooth approach after confirming that it would not deliver dependable cross-platform background discovery on ordinary phones. We chose a one-hour, user-triggered location snapshot instead of continuous tracking. We chose a smartphone web app so judges and users need no dedicated beacon, PC, native installation, or smart glasses. We also chose to avoid facial recognition entirely, keep notes private, never expose exact coordinates, and label all generated portraits as fictional.
+
+Codex helped us explore, implement, test, and refine those decisions; it did not replace responsibility for privacy, user experience, safety, or business strategy.
+
+## Architecture
+
+```text
+Smartphone browser
+  ├─ profile + verified-email restoration
+  ├─ QR / camera / short-code exchange
+  ├─ private notes + caution flag
+  └─ explicit one-hour location snapshot
+             │
+             ▼
+Cloudflare Worker / vinext API routes
+  ├─ D1: profiles, contacts, notes, exchanges, location TTL
+  ├─ Responses API: GPT-5.6 Structured Outputs
+  └─ Image API: GPT Image 2 fictional portraits
+```
+
+Key files:
+
+- `app/matane-app.tsx` — mobile UI and judge experience
+- `app/api/*` — server routes
+- `db/matane.ts` — persistence, twenty demo personas, and 150-meter matching
+- `lib/openai.ts` — GPT-5.6 Structured Outputs and GPT Image 2
+- `drizzle/*` — D1 migrations
+- `tests/rendered-html.test.mjs` — regression coverage
+- `SPEC.md` — original smart-glasses concept and documented smartphone MVP pivot
+
+## Privacy and safety design
+
+- No face photo capture, biometric template, facial recognition, or identity matching.
+- Location is read only when the user takes an explicit action.
+- No `watchPosition`; movement is not tracked or automatically refreshed.
+- A location snapshot expires after one hour.
+- Only mutually exchanged contacts can appear nearby.
+- Exact latitude and longitude are never returned to another user or the client list.
+- Original notes, nicknames, and caution flags are private to their author.
+- AI structure is hidden; the editable original note remains the source of truth.
+- Generated portraits are fictional and are not evidence of a person's real appearance.
+
+## Impact and business potential
+
+Hello Again can turn short conference breaks and networking sessions into useful reconnections. Instead of spending the first minute hiding a memory gap, users can continue the previous topic, follow up on a promise, make an introduction, or start a business conversation with confidence.
+
+The same consent-based reunion layer could support conferences, professional communities, alumni networks, coworking spaces, and accessibility-focused workplace tools. The product creates value without building a face database or exposing a map of other people.
+
+## Run locally
+
+Requirements:
+
+- Node.js 22.13 or newer
+- npm
+- An OpenAI API key only if you want live GPT-5.6 and GPT Image 2 calls
+
+```bash
+git clone https://github.com/ima-work-git/kao_oboenakute_iiyo.git
+cd kao_oboenakute_iiyo
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Open the local URL printed by the development server. Leave `OPENAI_API_KEY` blank to use the deterministic fallback path.
+
+Environment variables:
+
+```env
+OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.6-luna
 OPENAI_IMAGE_MODEL=gpt-image-2
 ```
 
-## ローカル起動
-
-Node.js 22.13以上を使います。
-
-```bash
-npm install
-npm run dev
-```
-
-検証:
+Validation:
 
 ```bash
 npm test
+npm run lint
 ```
 
-データはCloudflare D1に保存します。開発環境ではvinextがローカルD1を用意します。
+Production data is stored in Cloudflare D1. The Sites deployment owns the real D1 and R2 bindings declared in `.openai/hosting.json`.
 
-## 構成
+## Future native app
 
-- `app/matane-app.tsx`: スマホUI、審査入口、位置共有
-- `app/api/*`: セッション、交換、審査デモ、近接、メモ、想像ポートレートAPI
-- `db/matane.ts`: D1永続化、20人の架空ペルソナ、距離計算
-- `lib/openai.ts`: Responses API + Structured Outputs + Image API
-- `SPEC.md`: 当初案とスマホMVPへの変更記録
+The submitted product is intentionally a no-install smartphone web app. A future iOS and Android version can combine coarse location with Bluetooth Low Energy to improve indoor discovery and deliver opt-in background notifications—still with no dedicated hardware.
+
+The native design would broadcast rotating anonymous identifiers rather than names or fixed IDs. A server would resolve them only when both people have already exchanged profiles and both have enabled event mode. BLE would improve the probability of a timely reunion; it would not be presented as a precise distance meter or guaranteed background detector.
+
+## 日本語要約
+
+**使うのはスマホだけ。** 顔が覚えられない同志よ、もうそのストレスは抱えなくていい。Hello Againは、交換済みの人が近くにいる時に、名前と自分のメモを思い出させる再会支援アプリです。
+
+### 60秒デモシナリオ
+
+審査デモを開始し、「近く」で10人を確認します。友達を選ぶと、自分が残したメモ原文と会話のきっかけを確認でき、書いた特徴だけから架空のAI想像ポートレートを生成できます。最後に「友達」で全20人を確認します。
+
+本人の写真を撮影・保存・照合せず、顔認証や生体識別も行いません。実在する顔写真を利用しないことで、肖像権侵害や生体情報漏えいのリスクを抑えます。現在地はボタンを押した時に1回だけ登録し、1時間で失効します。
+
+懇親会やカンファレンスの休憩時間でも、前回の文脈から自然に会話を再開し、商談・紹介・協業の機会につなげられます。
+
+### 将来構想：ネイティブアプリ化
+
+将来はスマホ内蔵のBluetooth Low Energy（BLE）と粗い位置情報を組み合わせます。専用ビーコンなどの外部機器は使いません。氏名や固定IDを周囲へ送らず、短時間で変わる匿名IDを、双方が交換済みかつ明示同意中の場合だけ照合する設計です。
+
+## License
+
+Released under the [MIT License](LICENSE).

@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
 import {
@@ -1130,9 +1131,11 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     return (
       <>
         <main className="loading-screen" aria-live="polite">
-          <a className="brand-mark" href="/" aria-label="Hello Again home">
+          <Link className="brand-mark" href="/" aria-label="Hello Again home">
+            {/* The Sites runtime serves this fixed public icon without an image optimizer. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/hello-again-app-icon.png" alt="" width={72} height={72} />
-          </a>
+          </Link>
           <p>{t("loading")}</p>
           {languageButton}
         </main>
@@ -1146,10 +1149,11 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       <>
         <main className="onboarding-shell">
           <section className="onboarding-copy">
-            <a className="wordmark" href="/" aria-label="Hello Again home">
+            <Link className="wordmark" href="/" aria-label="Hello Again home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/hello-again-app-icon.png" alt="" width={44} height={44} />
               <span>Hello Again</span>
-            </a>
+            </Link>
             <p className="brand-tagline">{t("brand.tagline")}</p>
             <h1>{t("onboarding.headline")}</h1>
             <p className="lead">{t("onboarding.lead")}</p>
@@ -1209,10 +1213,11 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     <main className="app-shell">
       <header className="app-header">
         <div className="app-brand-area">
-          <a className="app-brand-link" href="/" onClick={(event) => { event.preventDefault(); returnToTop(); }} aria-label={`${t("nav.exchange")} — Hello Again`}>
+          <Link className="app-brand-link" href="/" onClick={(event) => { event.preventDefault(); returnToTop(); }} aria-label={`${t("nav.exchange")} — Hello Again`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/hello-again-app-icon.png" alt="" width={38} height={38} />
             <span className="app-wordmark">Hello Again</span>
-          </a>
+          </Link>
           <p className="header-caption">{t("header.user", { name: user.name })}</p>
         </div>
         <div className="header-actions">

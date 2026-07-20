@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "利用規約 | Hello Again",
@@ -116,11 +117,13 @@ export default function TermsPage() {
   return (
     <main className="terms-page">
       <header className="terms-header">
-        <a className="terms-brand" href="/" aria-label="Hello Againのトップページへ戻る">
+        <Link className="terms-brand" href="/" aria-label="Hello Againのトップページへ戻る">
+          {/* The Sites runtime serves this fixed public icon without an image optimizer. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/hello-again-app-icon.png" alt="" width={44} height={44} />
           <span>Hello Again</span>
-        </a>
-        <a className="terms-back" href="/">トップへ戻る</a>
+        </Link>
+        <Link className="terms-back" href="/">トップへ戻る</Link>
       </header>
 
       <article className="terms-document">
@@ -145,7 +148,7 @@ export default function TermsPage() {
 
         <footer className="terms-footer">
           <p>Hello Again 運営者</p>
-          <a href="/">Hello Againを開く</a>
+          <Link href="/">Hello Againを開く</Link>
         </footer>
       </article>
     </main>
