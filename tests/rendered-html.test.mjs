@@ -4,34 +4,50 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-test("builds the MATANE mobile experience", async () => {
-  const [layout, app, css, manifest] = await Promise.all([
+test("builds the multilingual Hello Again mobile experience", async () => {
+  const [layout, app, i18n, css, manifest] = await Promise.all([
     readFile(new URL("app/layout.tsx", root), "utf8"),
     readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("app/i18n.ts", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("dist/client/.vite/manifest.json", root), "utf8"),
   ]);
+  const ui = `${app}\n${i18n}`;
   assert.match(layout, /lang="ja"/i);
-  assert.match(layout, /MATANE — 近くにいる、を思い出す/);
+  assert.match(layout, /Hello Again — Never worry about remembering faces/);
+  assert.match(layout, /og-hello-again\.png/);
   assert.match(layout, /matane-app-icon\.svg/);
   assert.match(layout, /apple-icon\.png/);
-  assert.match(app, /名前を思い出す前に/);
-  assert.match(app, /顔認証なし/);
-  assert.match(app, /MATANEをはじめる/);
+  assert.match(app, />Hello Again</);
+  assert.match(i18n, /Never worry about remembering faces/);
+  assert.match(i18n, /日本語/);
+  assert.match(i18n, /English/);
+  assert.match(i18n, /简体中文/);
+  assert.match(i18n, /한국어/);
+  assert.match(i18n, /Español/);
+  assert.match(app, /LANGUAGE_KEY = "hello_again_language"/);
+  assert.match(app, /localStorage\.setItem\(LANGUAGE_KEY/);
+  assert.match(app, /LANGUAGE_OPTIONS\.map/);
+  assert.match(app, /setLanguagePickerOpen\(true\)/);
+  assert.match(app, /document\.documentElement\.lang/);
+  assert.match(css, /\.language-button/);
+  assert.match(css, /\.language-picker/);
+  assert.doesNotMatch(app, />MATANE/);
   assert.match(app, /visibilitychange/);
-  assert.match(app, /メモから作るイメージ/);
-  assert.match(app, /PORTRAIT_WAITING_MESSAGES/);
-  assert.match(app, /トイレに篭って待つのも作戦です/);
-  assert.match(app, /顔アップと全身の2枚を作成中です/);
+  assert.match(ui, /メモから作るイメージ/);
+  assert.match(app, /WAITING_MESSAGE_KEYS/);
+  assert.match(i18n, /トイレに篭って待つのも作戦です/);
+  assert.match(i18n, /A quick bathroom break is a valid strategy/);
+  assert.match(ui, /顔アップと全身の2枚を作成中です/);
   assert.match(app, /setPortraitWaitingMessage/);
   assert.match(app, /portrait-waiting-mark[^\n]+<i \/><b>\?<\/b>/);
   assert.match(css, /portrait-waiting/);
   assert.match(app, /useState<Tab>\("exchange"\)/);
   assert.match(app, /QRCode\.toDataURL/);
   assert.match(app, /searchParams\.set\("exchange"/);
-  assert.match(app, /キーボード標準音声入力/);
-  assert.match(app, /特徴を保存する \/ Save features/);
-  assert.match(app, /メモ原文/);
+  assert.match(ui, /キーボード標準音声入力/);
+  assert.match(ui, /特徴を保存する/);
+  assert.match(ui, /メモ原文/);
   assert.match(app, /className={`menu-button/);
   assert.match(app, /openFriend\(contact\.contactUserId\)/);
   assert.match(app, /method: "PATCH"/);
@@ -39,31 +55,31 @@ test("builds the MATANE mobile experience", async () => {
   assert.doesNotMatch(app, /AIで記憶にする|OpenAIが事実・外見・次の話題を整理/);
   assert.doesNotMatch(app, /className="fact-list"|className="trait-list"|className="alert-suggestion"/);
   assert.match(app, /inputMode="text"/);
-  assert.match(app, /怖いと記録する \/ Mark as caution/);
-  assert.match(app, /友達 <small>Friends/);
+  assert.match(ui, /怖いと記録する/);
+  assert.match(app, /t\("friends\.title"\)/);
   assert.match(app, /\/api\/profile/);
-  assert.match(app, /本人の顔を再現・特定するものではありません/);
-  assert.match(app, /友達と交換/);
-  assert.match(app, /近くの人を表示/);
-  assert.match(app, /今いる場所を登録（1時間有効）/);
-  assert.match(app, /移動しても自動更新されず、1時間後に無効になります/);
-  assert.match(app, /リアルタイム追跡はしません/);
-  assert.match(app, /現在地を更新（1時間延長）/);
-  assert.match(app, /登録した場所を解除/);
+  assert.match(ui, /本人の顔を再現・特定するものではありません/);
+  assert.match(ui, /友達と交換/);
+  assert.match(ui, /近くの人を表示/);
+  assert.match(ui, /今いる場所を登録（1時間有効）/);
+  assert.match(ui, /移動しても自動更新されず、1時間後に無効になります/);
+  assert.match(ui, /リアルタイム追跡はしません/);
+  assert.match(ui, /現在地を更新（1時間延長）/);
+  assert.match(ui, /登録した場所を解除/);
   assert.doesNotMatch(app, /navigator\.geolocation\.watchPosition/);
-  assert.match(app, /近くの人<small>Nearby/);
-  assert.match(app, /150m以内/);
-  assert.match(app, /メール連携・変更/);
-  assert.match(app, /プロフィール設定/);
-  assert.match(app, /ログアウトする \/ Sign out/);
-  assert.match(app, /カメラで相手のQRを読む/);
+  assert.match(app, /t\("nav\.nearby"\)/);
+  assert.match(ui, /150m以内/);
+  assert.match(ui, /メール連携・変更/);
+  assert.match(ui, /プロフィール設定/);
+  assert.match(ui, /ログアウトする/);
+  assert.match(ui, /カメラで相手のQRを読む/);
   assert.match(app, /navigator\.mediaDevices\.getUserMedia/);
   assert.match(app, /jsQR\(/);
   assert.match(app, /IdentityImages/);
-  assert.match(app, /顔アップと全身を作る/);
-  assert.match(app, /以前のメモを見る/);
+  assert.match(ui, /顔アップと全身を作る/);
+  assert.match(ui, /以前のメモを見る/);
   assert.match(app, /showPreviousMemos/);
-  assert.match(app, /直近のメモ/);
+  assert.match(ui, /直近のメモ/);
   assert.ok(app.indexOf('className="portrait-studio"') < app.indexOf('className="memory-notes-panel"'));
   assert.match(app, /faceSrc=\{portraits\[contact\.contactUserId\]\?\.face\?\.dataUrl\}/);
   assert.match(app, /fullBodySrc=\{portraits\[contact\.contactUserId\]\?\.fullBody\?\.dataUrl\}/);
@@ -81,12 +97,14 @@ test("builds the MATANE mobile experience", async () => {
   await access(new URL("app/icon.png", root));
   await access(new URL("app/apple-icon.png", root));
   await access(new URL("public/matane-app-icon.svg", root));
+  await access(new URL("public/og-hello-again.png", root));
   await access(new URL("dist/server/index.js", root));
 });
 
 test("stores private exchange context, nicknames, and a final portrait choice", async () => {
-  const [app, database, schema, exchangeRoute, contactRoute, portraitRoute, migration] = await Promise.all([
+  const [app, i18n, database, schema, exchangeRoute, contactRoute, portraitRoute, migration] = await Promise.all([
     readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("app/i18n.ts", root), "utf8"),
     readFile(new URL("db/matane.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("app/api/exchange/route.ts", root), "utf8"),
@@ -94,6 +112,7 @@ test("stores private exchange context, nicknames, and a final portrait choice", 
     readFile(new URL("app/api/portrait/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0006_black_misty_knight.sql", root), "utf8"),
   ]);
+  const ui = `${app}\n${i18n}`;
   assert.match(database, /NEARBY_RADIUS_METERS = 150/);
   assert.match(database, /LOCATION_TTL_MS = 60 \* 60 \* 1000/);
   assert.match(schema, /exchangedAt/);
@@ -101,18 +120,18 @@ test("stores private exchange context, nicknames, and a final portrait choice", 
   assert.match(migration, /ADD `exchanged_at`/);
   assert.match(migration, /ADD `exchange_latitude`/);
   assert.match(exchangeRoute, /exchangeContact\(owner, code, hasPosition/);
-  assert.match(app, /QR読み取り・コード交換の確定時に、その端末の現在地を1回だけ取得します/);
-  assert.match(app, /双方の交換履歴に残ります/);
+  assert.match(ui, /QR読み取り・コード交換の確定時に、その端末の現在地を1回だけ取得します/);
+  assert.match(ui, /双方の交換履歴に残ります/);
   assert.match(app, /className="exchange-history"/);
   assert.match(schema, /nickname/);
   assert.match(contactRoute, /updateContactNickname/);
-  assert.match(app, /自分だけのニックネーム/);
+  assert.match(ui, /自分だけのニックネーム/);
   assert.match(schema, /portraitPreviousKey/);
   assert.match(migration, /ADD `portrait_previous_key`/);
   assert.match(portraitRoute, /export async function PATCH/);
   assert.match(portraitRoute, /finalizeContactPortrait/);
-  assert.match(app, /前回に戻して採用/);
-  assert.match(app, /今回を採用/);
+  assert.match(ui, /前回に戻して採用/);
+  assert.match(ui, /今回を採用/);
 });
 
 test("ships durable data and no disposable starter preview", async () => {
@@ -135,11 +154,12 @@ test("ships durable data and no disposable starter preview", async () => {
 });
 
 test("restores the same profile from a verified email", async () => {
-  const [page, auth, sessionRoute, app, schema, migration] = await Promise.all([
+  const [page, auth, sessionRoute, app, i18n, schema, migration] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/chatgpt-auth.ts", root), "utf8"),
     readFile(new URL("app/api/session/route.ts", root), "utf8"),
     readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("app/i18n.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("drizzle/0003_shocking_white_tiger.sql", root), "utf8"),
   ]);
@@ -149,8 +169,8 @@ test("restores the same profile from a verified email", async () => {
   assert.match(sessionRoute, /linkUserEmail/);
   assert.match(sessionRoute, /restoredByEmail/);
   assert.match(app, /signin-with-chatgpt/);
-  assert.match(app, /ChatGPTでメールを確認/);
-  assert.match(app, /ログインせず体験する/);
+  assert.match(i18n, /ChatGPTでメールを確認/);
+  assert.match(i18n, /ログインせず体験する/);
   assert.match(schema, /users_email_idx/);
   assert.match(migration, /ADD `email`/);
   assert.match(migration, /UNIQUE INDEX `users_email_idx`/);
@@ -193,14 +213,15 @@ test("connects faithful structured memory to photorealistic OpenAI image generat
 });
 
 test("keeps AI structure private while original notes remain editable", async () => {
-  const [app, memoryRoute, database] = await Promise.all([
+  const [app, i18n, memoryRoute, database] = await Promise.all([
     readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("app/i18n.ts", root), "utf8"),
     readFile(new URL("app/api/memory/route.ts", root), "utf8"),
     readFile(new URL("db/matane.ts", root), "utf8"),
   ]);
-  assert.match(app, /<h3>メモ <small>Notes<\/small><\/h3>/);
-  assert.match(app, /編集 \/ Edit/);
-  assert.match(app, /削除 \/ Delete/);
+  assert.match(app, /t\("notes\.title"\)/);
+  assert.match(i18n, /"common\.edit": "編集"/);
+  assert.match(i18n, /"common\.delete": "削除"/);
   assert.match(memoryRoute, /export async function PATCH/);
   assert.match(memoryRoute, /export async function DELETE/);
   assert.match(memoryRoute, /replaceAndReanalyze/);
@@ -208,14 +229,14 @@ test("keeps AI structure private while original notes remain editable", async ()
 });
 
 test("provides a one-tap judge scenario with twenty memorable friends", async () => {
-  const [app, reviewerRoute, database, readme] = await Promise.all([
-    readFile(new URL("app/matane-app.tsx", root), "utf8"),
+  const [i18n, reviewerRoute, database, readme] = await Promise.all([
+    readFile(new URL("app/i18n.ts", root), "utf8"),
     readFile(new URL("app/api/reviewer/route.ts", root), "utf8"),
     readFile(new URL("db/matane.ts", root), "utf8"),
     readFile(new URL("README.md", root), "utf8"),
   ]);
-  assert.match(app, /審査デモを開始 \/ Start judge demo/);
-  assert.match(app, /20人と交換済み/);
+  assert.match(i18n, /"auth\.judgeStart": "審査デモを開始"/);
+  assert.match(i18n, /20人と交換済み/);
   assert.match(reviewerRoute, /createReviewerDemoSession/);
   assert.match(database, /REVIEWER_VENUE/);
   assert.match(database, /35\.6564031/);

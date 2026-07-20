@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 
-const title = "MATANE — 近くにいる、を思い出す";
-const description = "一度だけ交換。次の会場では、交換済みの人が近くにいることをスマホが知らせます。";
+const title = "Hello Again — Never worry about remembering faces.";
+const description = "顔を覚えられなくても、もう心配しない。交換済みの友達が近くにいるとスマホが知らせます。";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -26,14 +26,15 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       type: "website",
-      locale: "ja_JP",
-      images: [{ url: "/og-matane.png", width: 1731, height: 909, alt: "MATANE — 一度だけ交換。近くにいる、を思い出す。" }],
+      locale: "en_US",
+      alternateLocale: ["ja_JP", "zh_CN", "ko_KR", "es_ES"],
+      images: [{ url: "/og-hello-again.png", width: 1536, height: 1024, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/og-matane.png"],
+      images: ["/og-hello-again.png"],
     },
   };
 }
