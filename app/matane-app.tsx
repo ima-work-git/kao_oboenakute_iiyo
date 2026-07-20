@@ -139,9 +139,9 @@ function formatLocationExpiry(value: number, language: AppLanguage) {
 }
 
 function localizeExchangePlace(label: string, t: Translate) {
-  if (label === "場所は記録されていません") return t("place.none");
-  if (label.includes("渋谷ソラスタ")) return t("place.shibuya");
-  const coordinates = label.match(/緯度(-?[\d.]+)・経度(-?[\d.]+)付近/);
+  if (label === "場所は記録されていません" || label === "No place was recorded") return t("place.none");
+  if (label.includes("渋谷ソラスタ") || label.includes("Shibuya Solasta")) return t("place.shibuya");
+  const coordinates = label.match(/緯度(-?[\d.]+)・経度(-?[\d.]+)付近/) ?? label.match(/Near (-?[\d.]+), (-?[\d.]+)/);
   if (coordinates) return t("place.coordinates", { lat: coordinates[1], lng: coordinates[2] });
   return label;
 }

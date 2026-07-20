@@ -158,6 +158,22 @@ test("publishes protective Terms of Use with clear consent", async () => {
   assert.match(profileRoute, /Name pronunciation/);
 });
 
+test("keeps the judge demo personas and memories English-only", async () => {
+  const [database, i18n] = await Promise.all([
+    readFile(new URL("db/matane.ts", root), "utf8"),
+    readFile(new URL("app/i18n.ts", root), "utf8"),
+  ]);
+  const start = database.indexOf("const REVIEWER_PERSONAS");
+  const end = database.indexOf("function getBinding", start);
+  const reviewerSeed = database.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.doesNotMatch(reviewerSeed, /[ぁ-んァ-ヶ一-龠]/);
+  assert.match(database, /name: "Shibuya Solasta Conference"/);
+  assert.match(database, /name: "Judge Demo"/);
+  assert.match(database, /Continue the \$\{persona\.tags\[0\]\} conversation/);
+  assert.match(i18n, /profile photos may be years out of date/i);
+});
+
 test("stores private exchange context, nicknames, and a final portrait choice", async () => {
   const [app, i18n, database, schema, exchangeRoute, contactRoute, portraitRoute, migration] = await Promise.all([
     readFile(new URL("app/matane-app.tsx", root), "utf8"),
