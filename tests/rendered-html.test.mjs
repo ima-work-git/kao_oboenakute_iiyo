@@ -13,7 +13,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
     readFile(new URL("dist/client/.vite/manifest.json", root), "utf8"),
   ]);
   const ui = `${app}\n${i18n}`;
-  assert.match(layout, /lang="ja"/i);
+  assert.match(layout, /lang="en"/i);
   assert.match(layout, /Hello Again — Never worry about remembering faces/);
   assert.match(layout, /og-hello-again\.png/);
   assert.match(layout, /hello-again-app-icon\.png/);
@@ -38,7 +38,10 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /localStorage\.setItem\(LANGUAGE_KEY/);
   assert.match(app, /navigator\.languages/);
   assert.match(app, /preferredAppLanguage\(browserLanguages\)/);
+  assert.match(app, /useState<AppLanguage>\("en"\)/);
+  assert.match(app, /typeof locale === "string" && locale\.trim\(\)\.length > 0/);
   assert.match(i18n, /return "en"/);
+  assert.match(i18n, /typeof locale !== "string" \|\| !locale\.trim\(\)/);
   assert.match(app, /LANGUAGE_OPTIONS\.map/);
   assert.equal((app.match(/name="reading" required/g) ?? []).length, 2);
   assert.equal((app.match(/placeholder=\{t\("profile\.readingPlaceholder"\)\}/g) ?? []).length, 2);
@@ -243,7 +246,7 @@ test("ships durable data and no disposable starter preview", async () => {
   assert.match(packageJson, /"name": "matane"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(page, /<MataneApp account=/);
-  assert.match(layout, /lang="ja"/);
+  assert.match(layout, /lang="en"/);
   assert.match(migration, /CREATE TABLE `users`/);
   assert.match(migration, /CREATE TABLE `contacts`/);
   await assert.rejects(access(new URL("app/_sites-preview", root)));

@@ -247,7 +247,7 @@ function ConsentPanel({
 }
 
 export function MataneApp({ account }: { account: AccountIdentity | null }) {
-  const [language, setLanguage] = useState<AppLanguage>("ja");
+  const [language, setLanguage] = useState<AppLanguage>("en");
   const [languageReady, setLanguageReady] = useState(false);
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
   const [hasLanguagePreference, setHasLanguagePreference] = useState(false);
@@ -258,7 +258,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [locationActive, setLocationActive] = useState(false);
-  const [locationLabel, setLocationLabel] = useState(translate("ja", "location.none"));
+  const [locationLabel, setLocationLabel] = useState(translate("en", "location.none"));
   const [locationExpiresAt, setLocationExpiresAt] = useState<number | null>(null);
   const [lastCoordinates, setLastCoordinates] = useState<Coordinates | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -278,9 +278,9 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [portraits, setPortraits] = useState<Record<string, PortraitSet>>({});
   const [showPreviousMemos, setShowPreviousMemos] = useState(false);
   const [portraitBusyId, setPortraitBusyId] = useState<string | null>(null);
-  const [portraitWaitingMessage, setPortraitWaitingMessage] = useState<string>(translate("ja", "waiting.1"));
+  const [portraitWaitingMessage, setPortraitWaitingMessage] = useState<string>(translate("en", "waiting.1"));
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [scannerStatus, setScannerStatus] = useState(translate("ja", "scanner.preparing"));
+  const [scannerStatus, setScannerStatus] = useState(translate("en", "scanner.preparing"));
   const memoTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const autoExchangeRef = useRef("");
   const scannerVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -300,9 +300,10 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         setLanguage(stored);
         setHasLanguagePreference(true);
       } else {
-        const browserLanguages = window.navigator.languages?.length
-          ? window.navigator.languages
-          : [window.navigator.language];
+        const browserLanguages = [
+          ...(window.navigator.languages ?? []),
+          window.navigator.language,
+        ].filter((locale): locale is string => typeof locale === "string" && locale.trim().length > 0);
         setLanguage(preferredAppLanguage(browserLanguages));
         setLanguagePickerOpen(true);
       }

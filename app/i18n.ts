@@ -483,8 +483,9 @@ export function localeFor(language: AppLanguage) {
   return { ja: "ja-JP", en: "en-US", zh: "zh-CN", ko: "ko-KR", es: "es-ES", fr: "fr-FR", de: "de-DE", pt: "pt-BR" }[language];
 }
 
-export function preferredAppLanguage(locales: readonly string[]): AppLanguage {
+export function preferredAppLanguage(locales: readonly (string | null | undefined)[]): AppLanguage {
   for (const locale of locales) {
+    if (typeof locale !== "string" || !locale.trim()) continue;
     const base = locale.trim().toLowerCase().split("-")[0];
     if (isAppLanguage(base)) return base;
   }
