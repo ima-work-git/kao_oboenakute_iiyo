@@ -26,7 +26,7 @@ const ja = {
   "common.itemCount": "{count}件",
   "brand.tagline": "顔を覚える心配は、もういらない。",
   "loading": "Hello Againを準備しています",
-  "onboarding.headline": "名前を思い出せなくても、\nまた話せる。",
+  "onboarding.headline": "名前を思い出せなくても、また話せる。",
   "onboarding.lead": "一度だけ交換。次の会場では、交換済みの人が近くにいることをスマホが知らせます。",
   "onboarding.privacy": "顔認証なし。座標は相手に見せません。",
   "auth.welcome": "Hello Againへようこそ",

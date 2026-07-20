@@ -1146,7 +1146,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               <span>Hello Again</span>
             </a>
             <p className="brand-tagline">{t("brand.tagline")}</p>
-            <h1>{t("onboarding.headline").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}</h1>
+            <h1 className={language === "ja" ? "is-japanese-single-line" : ""}>{t("onboarding.headline").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}</h1>
             <p className="lead">{t("onboarding.lead")}</p>
             <div className="privacy-note"><span className="privacy-dot" />{t("onboarding.privacy")}</div>
           </section>
