@@ -436,9 +436,9 @@ button:disabled { cursor: wait; opacity: 0.55; }
 @media (min-width: 760px) {
   body { background: var(--deep); }
   .onboarding-shell { grid-template-columns: minmax(0, 1.15fr) minmax(360px, .85fr); padding: 56px; gap: 72px; }
-  .onboarding-copy, .onboarding-card, .auth-card { margin: 0; }
+  .onboarding-copy, .onboarding-card, .auth-card, .consent-card { margin: 0; }
   .onboarding-copy { justify-self: end; align-self: center; }
-  .onboarding-card, .auth-card { justify-self: start; padding: 30px; }
+  .onboarding-card, .auth-card, .consent-card { justify-self: start; padding: 30px; }
   .wordmark { margin-bottom: 72px; }
   .app-shell { width: 620px; margin: 0 auto; min-height: 100svh; box-shadow: 0 0 80px rgba(0,0,0,.32); }
   .ambient { display: block; position: fixed; pointer-events: none; border-radius: 50%; filter: blur(2px); }
@@ -487,7 +487,8 @@ body {
 .onboarding-shell::after { display: none; }
 .onboarding-copy,
 .onboarding-card,
-.auth-card { max-width: 460px; }
+.auth-card,
+.consent-card { max-width: 460px; }
 .wordmark {
   margin: 0 0 30px;
   color: var(--ink);
@@ -503,13 +504,22 @@ body {
 .onboarding-consent { margin: 14px 0 0; color: #717a75; font-size: 11px; line-height: 1.65; }
 .onboarding-consent a { color: var(--forest); font-weight: 750; text-underline-offset: 3px; }
 .onboarding-card,
-.auth-card {
+.auth-card,
+.consent-card {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: white;
   box-shadow: 0 8px 28px rgba(39, 45, 41, .06);
 }
 .auth-card { padding: 24px 20px; }
+.consent-card { align-self: center; padding: 24px 20px; }
+.consent-card h2 { margin: 0; font-size: 24px; }
+.consent-card > p:not(.step-label) { color: #66716b; font-size: 13px; line-height: 1.65; }
+.consent-card label { margin: 13px 0; display: flex; align-items: flex-start; gap: 10px; color: #46524b; font-size: 12px; line-height: 1.65; cursor: pointer; }
+.consent-card label input { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; accent-color: var(--forest); }
+.consent-card label a { color: var(--forest); font-weight: 750; text-underline-offset: 3px; }
+.consent-card .primary-button { margin-top: 18px; }
+.consent-card > small { display: block; margin-top: 9px; color: #7a5550; font-size: 10px; line-height: 1.5; }
 .auth-card h2 { font-size: 24px; }
 .auth-card > p:not(.step-label) { color: #66716b; font-size: 13px; line-height: 1.65; }
 .step-label { margin-bottom: 16px; color: #69736d; font-size: 12px; letter-spacing: 0; }
@@ -963,6 +973,10 @@ body {
 }
 .settings-note { display: block; margin-top: 10px; color: #78827c; font-size: 10px; line-height: 1.6; }
 .logout-setting .logout-button { margin-top: 24px; background: #9c3f36; }
+.policy-links { margin: 16px 0 28px; display: grid; gap: 8px; }
+.policy-links a { border: 1px solid var(--line); border-radius: 11px; background: white; color: var(--forest); padding: 13px; font-size: 12px; font-weight: 750; text-decoration: none; }
+.delete-account-button { width: 100%; min-height: 52px; border: 1px solid #b44b42; border-radius: 12px; background: #fff7f5; color: #983a32; font-size: 13px; font-weight: 800; }
+.delete-account-button:disabled { opacity: .55; }
 .profile-editor .settings-detail-heading { margin-bottom: 8px; }
 .profile-editor .profile-editor-heading { margin-bottom: 20px; }
 
@@ -1232,6 +1246,7 @@ body {
 
 @media (min-width: 760px) {
   .brand-tagline { margin: 10px 0 42px; }
+  .consent-card { justify-self: start; }
 }
 
 /* Terms of Use */

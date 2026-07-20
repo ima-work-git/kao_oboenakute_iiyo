@@ -3,6 +3,7 @@ import {
   finalizeContactPortrait,
   getContact,
   getContactPortrait,
+  hasUserConsent,
   requireUser,
   saveContactPortrait,
 } from "@/db/matane";
@@ -30,6 +31,9 @@ function extensionFor(contentType: string) {
 export async function GET(request: Request) {
   try {
     const owner = await requireUser(request);
+    if (!hasUserConsent(owner)) {
+      return Response.json({ error: "AI画像生成への明示同意が必要です。" }, { status: 403 });
+    }
     const url = new URL(request.url);
     const contactUserId = url.searchParams.get("contactUserId")?.trim() || "";
     const kind = url.searchParams.get("kind") || "face";
@@ -61,6 +65,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const owner = await requireUser(request);
+    if (!hasUserConsent(owner)) {
+      return Response.json({ error: "AI画像生成への明示同意が必要です。" }, { status: 403 });
+    }
     const payload = (await request.json()) as { contactUserId?: string };
     const contactUserId = payload.contactUserId?.trim() || "";
     if (!contactUserId) {
@@ -131,6 +138,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const owner = await requireUser(request);
+    if (!hasUserConsent(owner)) {
+      return Response.json({ error: "AI画像生成への明示同意が必要です。" }, { status: 403 });
+    }
     const payload = (await request.json()) as { contactUserId?: string; choice?: string };
     const contactUserId = payload.contactUserId?.trim() || "";
     const choice = payload.choice === "previous" ? "previous" : payload.choice === "current" ? "current" : null;

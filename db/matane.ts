@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { CURRENT_POLICY_VERSION } from "@/lib/policy";
 
 export type Memo = {
   date: string;
@@ -15,6 +16,8 @@ export type MataneUser = {
   avatarDataUrl: string;
   locationEnabled: boolean;
   lastSeen: string | null;
+  consentComplete: boolean;
+  policyVersion: string;
   createdAt: string;
 };
 
@@ -37,8 +40,6 @@ export type ContactProfile = {
   portraitDisclaimer: string;
   portraitUpdatedAt: string | null;
   alertLevel: "normal" | "caution";
-  alertSuggested: boolean;
-  alertReason: string | null;
   hudText: string;
   lastSeen: string | null;
   nearby: boolean;
@@ -65,6 +66,10 @@ export type UserRow = {
   location_accuracy: number | null;
   location_enabled: number;
   last_seen: string | null;
+  policy_version: string;
+  terms_accepted_at: string | null;
+  privacy_accepted_at: string | null;
+  image_consent_accepted_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -372,6 +377,10 @@ function toUser(row: UserRow): MataneUser {
     avatarDataUrl: row.avatar_data_url,
     locationEnabled: Boolean(row.location_enabled) && isFresh(row.last_seen),
     lastSeen: row.last_seen,
+    consentComplete: row.policy_version === CURRENT_POLICY_VERSION && Boolean(
+      row.terms_accepted_at && row.privacy_accepted_at && row.image_consent_accepted_at
+    ),
+    policyVersion: row.policy_version,
     createdAt: row.created_at,
   };
 }
@@ -424,8 +433,6 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
     portraitDisclaimer: row.portrait_disclaimer,
     portraitUpdatedAt: row.portrait_updated_at,
     alertLevel: row.alert_level === "caution" ? "caution" : "normal",
-    alertSuggested: Boolean(row.alert_suggested),
-    alertReason: row.alert_reason,
     hudText: row.hud_text,
     lastSeen: row.contact_last_seen,
     nearby: distance != null && distance <= NEARBY_RADIUS_METERS,
@@ -520,6 +527,10 @@ export async function ensureMataneDb() {
       location_accuracy REAL,
       location_enabled INTEGER NOT NULL DEFAULT 0,
       last_seen TEXT,
+      policy_version TEXT NOT NULL DEFAULT '',
+      terms_accepted_at TEXT,
+      privacy_accepted_at TEXT,
+      image_consent_accepted_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )`),
@@ -562,6 +573,18 @@ export async function ensureMataneDb() {
   }
   if (!(userColumns.results ?? []).some((column) => column.name === "avatar_data_url")) {
     await db.prepare("ALTER TABLE users ADD COLUMN avatar_data_url TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(userColumns.results ?? []).some((column) => column.name === "policy_version")) {
+    await db.prepare("ALTER TABLE users ADD COLUMN policy_version TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(userColumns.results ?? []).some((column) => column.name === "terms_accepted_at")) {
+    await db.prepare("ALTER TABLE users ADD COLUMN terms_accepted_at TEXT").run();
+  }
+  if (!(userColumns.results ?? []).some((column) => column.name === "privacy_accepted_at")) {
+    await db.prepare("ALTER TABLE users ADD COLUMN privacy_accepted_at TEXT").run();
+  }
+  if (!(userColumns.results ?? []).some((column) => column.name === "image_consent_accepted_at")) {
+    await db.prepare("ALTER TABLE users ADD COLUMN image_consent_accepted_at TEXT").run();
   }
   await db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email)").run();
   const contactColumns = await db.prepare("PRAGMA table_info(contacts)").all<{ name: string }>();
@@ -620,6 +643,7 @@ export async function createUser(input: {
   org: string;
   avatarDataUrl: string;
   accountEmail: string | null;
+  consentAccepted: boolean;
 }): Promise<{ user: MataneUser; token: string }> {
   const db = await ensureMataneDb();
   const id = crypto.randomUUID();
@@ -638,10 +662,18 @@ export async function createUser(input: {
     .prepare(
       `INSERT INTO users (
         id, device_token, email, public_code, name, reading, org, avatar_data_url,
-        location_enabled, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+        location_enabled, policy_version, terms_accepted_at, privacy_accepted_at,
+        image_consent_accepted_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`
     )
-    .bind(id, token, input.accountEmail, publicCode, input.name, input.reading, input.org, input.avatarDataUrl, now, now)
+    .bind(
+      id, token, input.accountEmail, publicCode, input.name, input.reading, input.org, input.avatarDataUrl,
+      input.consentAccepted ? CURRENT_POLICY_VERSION : "",
+      input.consentAccepted ? now : null,
+      input.consentAccepted ? now : null,
+      input.consentAccepted ? now : null,
+      now, now
+    )
     .run();
   const row = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first<UserRow>();
   if (!row) throw new Error("プロフィールを作成できませんでした。");
@@ -655,6 +687,7 @@ export async function createReviewerDemoSession() {
     org: "OpenAI Build Week · JUDGE DEMO",
     avatarDataUrl: "",
     accountEmail: null,
+    consentAccepted: true,
   });
   const db = await ensureMataneDb();
   const now = new Date().toISOString();
@@ -823,6 +856,47 @@ export async function requireUser(request: Request): Promise<UserRow> {
   const user = await getUserByToken(tokenFromRequest(request));
   if (!user) throw new Error("SESSION_REQUIRED");
   return user;
+}
+
+export function hasUserConsent(user: UserRow) {
+  return user.policy_version === CURRENT_POLICY_VERSION && Boolean(
+    user.terms_accepted_at && user.privacy_accepted_at && user.image_consent_accepted_at
+  );
+}
+
+export async function acceptCurrentPolicies(userId: string) {
+  const db = await ensureMataneDb();
+  const now = new Date().toISOString();
+  await db.prepare(
+    `UPDATE users SET policy_version = ?, terms_accepted_at = ?, privacy_accepted_at = ?,
+     image_consent_accepted_at = ?, updated_at = ? WHERE id = ?`
+  ).bind(CURRENT_POLICY_VERSION, now, now, now, now, userId).run();
+  const row = await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first<UserRow>();
+  if (!row) throw new Error("プロフィールが見つかりませんでした。");
+  return toUser(row);
+}
+
+export async function deleteUserData(userId: string) {
+  const db = await ensureMataneDb();
+  const portraits = await db.prepare(
+    `SELECT portrait_key, portrait_full_body_key, portrait_previous_key, portrait_previous_full_body_key
+     FROM contacts WHERE owner_id = ? OR contact_user_id = ?`
+  ).bind(userId, userId).all<{
+    portrait_key: string;
+    portrait_full_body_key: string;
+    portrait_previous_key: string;
+    portrait_previous_full_body_key: string;
+  }>();
+  await db.batch([
+    db.prepare("DELETE FROM contacts WHERE owner_id = ? OR contact_user_id = ?").bind(userId, userId),
+    db.prepare("DELETE FROM users WHERE id = ?").bind(userId),
+  ]);
+  return (portraits.results ?? []).flatMap((row) => [
+    row.portrait_key,
+    row.portrait_full_body_key,
+    row.portrait_previous_key,
+    row.portrait_previous_full_body_key,
+  ]).filter(Boolean);
 }
 
 async function contactRows(ownerId: string) {
@@ -1087,8 +1161,6 @@ export async function updateMemory(input: {
   facts: string[];
   visualTraits: string[];
   tags: string[];
-  alertSuggested: boolean;
-  alertReason: string | null;
   hudText: string;
 }) {
   const db = await ensureMataneDb();
@@ -1102,7 +1174,7 @@ export async function updateMemory(input: {
   await db
     .prepare(
       `UPDATE contacts SET tags = ?, memos = ?, facts = ?, visual_traits = ?,
-       alert_suggested = ?, alert_reason = ?, hud_text = ?, updated_at = ?
+       alert_suggested = 0, alert_reason = NULL, hud_text = ?, updated_at = ?
        WHERE owner_id = ? AND contact_user_id = ?`
     )
     .bind(
@@ -1110,8 +1182,6 @@ export async function updateMemory(input: {
       JSON.stringify(memos),
       JSON.stringify(facts),
       JSON.stringify(visualTraits),
-      input.alertSuggested ? 1 : 0,
-      input.alertReason,
       input.hudText,
       now,
       input.ownerId,
@@ -1128,18 +1198,15 @@ export async function replaceMemories(input: {
   facts: string[];
   visualTraits: string[];
   tags: string[];
-  alertSuggested: boolean;
-  alertReason: string | null;
   hudText: string;
 }) {
   const db = await ensureMataneDb();
   const current = await getContact(input.ownerId, input.contactUserId);
   if (!current) throw new Error("交換済みの相手が見つかりませんでした。");
-  const cautionActive = current.alertLevel === "caution";
   await db
     .prepare(
       `UPDATE contacts SET tags = ?, memos = ?, facts = ?, visual_traits = ?,
-       alert_suggested = ?, alert_reason = ?, hud_text = ?, updated_at = ?
+       alert_suggested = 0, alert_reason = NULL, hud_text = ?, updated_at = ?
        WHERE owner_id = ? AND contact_user_id = ?`
     )
     .bind(
@@ -1147,9 +1214,7 @@ export async function replaceMemories(input: {
       JSON.stringify(input.memos),
       JSON.stringify(input.facts.slice(-8)),
       JSON.stringify(input.visualTraits.slice(-8)),
-      cautionActive ? 0 : input.alertSuggested ? 1 : 0,
-      cautionActive ? current.alertReason : input.alertReason,
-      cautionActive ? current.hudText : input.hudText,
+      input.hudText,
       new Date().toISOString(),
       input.ownerId,
       input.contactUserId
@@ -1162,7 +1227,7 @@ export async function setAlert(ownerId: string, contactUserId: string, approved:
   const db = await ensureMataneDb();
   const current = await getContact(ownerId, contactUserId);
   if (!current) throw new Error("交換済みの相手が見つかりませんでした。");
-  const reason = approved ? current.alertReason || "前回のメモを確認" : null;
+  const reason = approved ? "自分で設定した非公開の注意フラグ" : null;
   const hudText = approved
     ? `!! ${current.name}さんが近くにいます\n${reason} → 無理せず離れる`
     : `${current.name}さん${current.org ? `｜${current.org}` : ""}\n前回の続きを話す`;

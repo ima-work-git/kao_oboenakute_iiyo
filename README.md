@@ -14,6 +14,7 @@ Hello Again is a mobile-first reunion assistant for people who struggle to remem
 - **Source:** [github.com/ima-work-git/kao_oboenakute_iiyo](https://github.com/ima-work-git/kao_oboenakute_iiyo)
 - **Primary Codex `/feedback` Session ID:** `019f7384-363b-7382-823e-3d7e8363976b`
 - **Primary platform:** Smartphone web browser; no installation or external device required
+- **Entrant:** Fumiya, an individual entrant, working with Codex. The early “team of three” note was a planning template and does not describe the submitted build.
 
 The judge demo is free, requires no email registration, and stays usable without granting location access. On the first screen, select English and choose **Start judge demo**.
 
@@ -31,7 +32,7 @@ Hello Again brings back the useful context at the moment of reunion. It treats m
 - Registers one location snapshot only after the user explicitly taps the button.
 - Expires that snapshot after one hour and never follows movement in real time.
 - Shows only exchanged friends within 150 meters; exact coordinates are never returned to another user or to the client UI.
-- Uses GPT-5.6 to turn free-form memory notes into structured, safety-conscious internal data.
+- Uses GPT-5.6 to extract only explicitly written facts, topics, and visual traits from free-form memory notes.
 - Uses GPT Image 2 to create clearly fictional, photorealistic memory aids from written visual details.
 - Keeps the original note editable and hides the internal AI structure from the user.
 - Supports Japanese, English, Simplified Chinese, Korean, Spanish, French, German, and Portuguese.
@@ -54,7 +55,7 @@ All demo names, organizations, notes, and image prompts are fictional and Englis
 
 ### GPT-5.6 in the product
 
-When a user saves a free-form note, the app sends it to the Responses API with a strict JSON schema. GPT-5.6 extracts only explicitly stated facts, tags, visual traits, an optional caution suggestion, and two concise reunion prompts. The prompt prohibits inventing sensitive attributes and keeps any caution decision as a suggestion—the user makes the final choice.
+When a user saves a free-form note, the app sends it to the Responses API with a strict JSON schema. GPT-5.6 extracts only explicitly stated facts, tags, visual traits, and two concise reunion prompts. The prompt prohibits inventing sensitive attributes or classifying whether a person is dangerous, trustworthy, desirable, or a “caution person.” The private caution flag is set and removed only by the user; AI never recommends it.
 
 ```env
 OPENAI_MODEL=gpt-5.6-luna
@@ -70,9 +71,9 @@ The Image API receives only written visual traits, such as “bright red knit ca
 OPENAI_IMAGE_MODEL=gpt-image-2
 ```
 
-Generated images are presented as **AI-imagined** aids. The app does not photograph, store, compare, identify, or recognize a real face.
+Generated images are presented as **AI-imagined** aids. The portrait generator does not take a real face photo as input and the app does not compare, identify, or recognize faces. A user may still choose to upload an ordinary profile avatar, which is handled as profile data under the Privacy Policy.
 
-## How we collaborated with Codex
+## How I collaborated with Codex
 
 Codex was the development partner throughout the main build thread, not a decorative mention added at submission time. The primary evidence thread is the Session ID shown above.
 
@@ -89,11 +90,11 @@ Codex was the development partner throughout the main build thread, not a decora
 - Researched browser Bluetooth and background-location limits before the product pivot.
 - Helped script, render, validate, and publish the 2:42 English demo video.
 
-### Human product, engineering, and design decisions
+### Individual product, engineering, and design decisions
 
-The team made the consequential choices. We rejected a Web Bluetooth approach after confirming that it would not deliver dependable cross-platform background discovery on ordinary phones. We chose a one-hour, user-triggered location snapshot instead of continuous tracking. We chose a smartphone web app so judges and users need no dedicated beacon, PC, native installation, or smart glasses. We also chose to avoid facial recognition entirely, keep notes private, never expose exact coordinates, and label all generated portraits as fictional.
+I made the consequential choices as the sole individual entrant. I rejected a Web Bluetooth approach after confirming that it would not deliver dependable cross-platform background discovery on ordinary phones. I chose a one-hour, user-triggered location snapshot instead of continuous tracking. I chose a smartphone web app so judges and users need no dedicated beacon, PC, native installation, or smart glasses. I also chose to avoid facial recognition entirely, keep notes private, never expose exact coordinates, and label all generated portraits as fictional.
 
-Codex helped us explore, implement, test, and refine those decisions; it did not replace responsibility for privacy, user experience, safety, or business strategy.
+Codex helped me explore, implement, test, and refine those decisions; it did not replace my responsibility for privacy, user experience, safety, or business strategy.
 
 ## Architecture
 
@@ -123,7 +124,7 @@ Key files:
 
 ## Privacy and safety design
 
-- No face photo capture, biometric template, facial recognition, or identity matching.
+- No real-face capture for AI portraits, biometric template, facial recognition, or identity matching. An optional user-supplied profile avatar remains ordinary profile data.
 - Location is read only when the user takes an explicit action.
 - No `watchPosition`; movement is not tracked or automatically refreshed.
 - A location snapshot expires after one hour.
@@ -132,6 +133,10 @@ Key files:
 - Original notes, nicknames, and caution flags are private to their author.
 - AI structure is hidden; the editable original note remains the source of truth.
 - Generated portraits are fictional and are not evidence of a person's real appearance.
+- First use requires separate, explicit acceptance of the [Terms of Use](https://matane-reunion-2026.fumiyaa.chatgpt.site/terms), [Privacy Policy](https://matane-reunion-2026.fumiyaa.chatgpt.site/privacy), and OpenAI processing for photorealistic fictional memory images.
+- Users may enter another person’s information only with lawful authority or permission.
+- AI does not evaluate danger, trustworthiness, personality, or social value; caution flags are manual and private.
+- Settings includes permanent deletion of the profile, exchange data, private notes, and saved portraits.
 
 ## Impact and business potential
 

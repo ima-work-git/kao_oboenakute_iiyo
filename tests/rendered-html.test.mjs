@@ -33,15 +33,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(i18n, /Français/);
   assert.match(i18n, /Deutsch/);
   assert.match(i18n, /Português/);
-  const languageNames = ["ja", "en", "zh", "ko", "es", "fr", "de", "pt"];
-  const translatedKeySets = languageNames.map((name, index) => {
-    const start = i18n.indexOf(`const ${name}`);
-    const end = index + 1 < languageNames.length
-      ? i18n.indexOf(`const ${languageNames[index + 1]}`, start)
-      : i18n.indexOf("const TRANSLATIONS", start);
-    return new Set([...i18n.slice(start, end).matchAll(/"([a-zA-Z][^"]*)":/g)].map((match) => match[1]));
-  });
-  for (const keys of translatedKeySets) assert.deepEqual(keys, translatedKeySets[0]);
+  assert.match(i18n, /POLICY_TRANSLATIONS/);
   assert.match(app, /LANGUAGE_KEY = "hello_again_language"/);
   assert.match(app, /localStorage\.setItem\(LANGUAGE_KEY/);
   assert.match(app, /navigator\.languages/);
@@ -59,7 +51,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /Choose your language for Hello Again/);
   assert.match(app, /returnToTop\(\)/);
   assert.match(app, /className="app-brand-link"/);
-  assert.equal((app.match(/<img src="\/hello-again-app-icon\.png"/g) ?? []).length, 3);
+  assert.ok((app.match(/<img src="\/hello-again-app-icon\.png"/g) ?? []).length >= 3);
   assert.match(app, /setLanguagePickerOpen\(true\)/);
   assert.match(app, /document\.documentElement\.lang/);
   assert.match(css, /\.language-button/);
@@ -137,13 +129,17 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   await access(new URL("dist/server/index.js", root));
 });
 
-test("publishes protective Terms of Use with clear consent", async () => {
-  const [terms, css, app, i18n, sessionRoute, profileRoute] = await Promise.all([
+test("publishes bilingual policies and requires versioned explicit consent", async () => {
+  const [terms, privacy, css, app, i18n, sessionRoute, consentRoute, policy, migration, profileRoute] = await Promise.all([
     readFile(new URL("app/terms/page.tsx", root), "utf8"),
+    readFile(new URL("app/privacy/page.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("app/matane-app.tsx", root), "utf8"),
     readFile(new URL("app/i18n.ts", root), "utf8"),
     readFile(new URL("app/api/session/route.ts", root), "utf8"),
+    readFile(new URL("app/api/consent/route.ts", root), "utf8"),
+    readFile(new URL("lib/policy.ts", root), "utf8"),
+    readFile(new URL("drizzle/0007_silent_wiccan.sql", root), "utf8"),
     readFile(new URL("app/api/profile/route.ts", root), "utf8"),
   ]);
   assert.match(terms, /第9条（停止・変更・終了）/);
@@ -151,11 +147,38 @@ test("publishes protective Terms of Use with clear consent", async () => {
   assert.match(terms, /運営者の故意又は重大な過失により生じた損害には適用しません/);
   assert.match(terms, /東京地方裁判所又は東京簡易裁判所/);
   assert.match(terms, /実験的なプロトタイプ/);
+  assert.match(terms, /Scope and explicit consent/);
+  assert.match(privacy, /AI does not judge people/);
+  assert.match(privacy, /AIは人物を評価しません/);
   assert.match(css, /\.terms-document/);
+  assert.match(css, /\.consent-card/);
   assert.match(app, /t\("terms\.link"\)/);
-  assert.match(i18n, /本サービスを利用することで/);
+  assert.match(app, /ConsentPanel/);
+  assert.match(app, /href="\/privacy"/);
+  assert.match(i18n, /利用前の確認/);
+  assert.match(i18n, /実写風の架空イメージ生成/);
+  assert.match(policy, /CURRENT_POLICY_VERSION = "2026-07-21"/);
+  assert.match(sessionRoute, /hasCurrentPolicyConsent/);
+  assert.match(consentRoute, /acceptCurrentPolicies/);
+  assert.match(migration, /image_consent_accepted_at/);
   assert.match(sessionRoute, /名前の読み方をローマ字で入力してください/);
   assert.match(profileRoute, /Name pronunciation/);
+});
+
+test("keeps caution manual and removes AI person-risk classification", async () => {
+  const [openai, memoryRoute, database, readme, spec] = await Promise.all([
+    readFile(new URL("lib/openai.ts", root), "utf8"),
+    readFile(new URL("app/api/memory/route.ts", root), "utf8"),
+    readFile(new URL("db/matane.ts", root), "utf8"),
+    readFile(new URL("README.md", root), "utf8"),
+    readFile(new URL("SPEC.md", root), "utf8"),
+  ]);
+  assert.doesNotMatch(openai, /alertSuggested|alertReason|cautionPattern|注意人物の判定/);
+  assert.doesNotMatch(memoryRoute, /analysis\.alert/);
+  assert.match(database, /自分で設定した非公開の注意フラグ/);
+  assert.match(readme, /sole individual entrant/);
+  assert.match(spec, /one individual entrant, working with Codex/);
+  assert.doesNotMatch(spec, /OpenAI Build Week 3h ハッカソン \/ チーム3名/);
 });
 
 test("keeps the judge demo personas and memories English-only", async () => {

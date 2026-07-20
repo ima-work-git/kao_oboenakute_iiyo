@@ -1,4 +1,4 @@
-import { getContact, replaceMemories, requireUser, updateMemory, type ContactProfile, type Memo } from "@/db/matane";
+import { getContact, hasUserConsent, replaceMemories, requireUser, updateMemory, type ContactProfile, type Memo } from "@/db/matane";
 import { analyzeMemory } from "@/lib/openai";
 
 async function replaceAndReanalyze(ownerId: string, contact: ContactProfile, memos: Memo[]) {
@@ -11,8 +11,6 @@ async function replaceAndReanalyze(ownerId: string, contact: ContactProfile, mem
         facts: [],
         visualTraits: [],
         tags: [],
-        alertSuggested: false,
-        alertReason: null,
         hudText: `${contact.name}さん${contact.org ? `｜${contact.org}` : ""}\n前回の続きを話す`,
       }),
       aiMode: "none",
@@ -28,8 +26,6 @@ async function replaceAndReanalyze(ownerId: string, contact: ContactProfile, mem
       facts: analysis.facts,
       visualTraits: analysis.visualTraits,
       tags: analysis.tags,
-      alertSuggested: analysis.alertSuggested,
-      alertReason: analysis.alertReason,
       hudText: `${analysis.hudLine1}\n${analysis.hudLine2}`,
     }),
     aiMode: analysis.mode,
@@ -40,12 +36,16 @@ function memoryError(error: unknown, fallback: string) {
   if (error instanceof Error && error.message === "SESSION_REQUIRED") {
     return Response.json({ error: "プロフィールを作成してください。" }, { status: 401 });
   }
+  if (error instanceof Error && error.message === "CONSENT_REQUIRED") {
+    return Response.json({ error: "利用規約・プライバシーポリシー・AI画像生成への同意が必要です。" }, { status: 403 });
+  }
   return Response.json({ error: error instanceof Error ? error.message : fallback }, { status: 500 });
 }
 
 export async function POST(request: Request) {
   try {
     const owner = await requireUser(request);
+    if (!hasUserConsent(owner)) throw new Error("CONSENT_REQUIRED");
     const payload = (await request.json()) as { contactUserId?: string; memo?: string };
     const contactUserId = payload.contactUserId?.trim() || "";
     const memo = payload.memo?.trim() || "";
@@ -64,8 +64,6 @@ export async function POST(request: Request) {
       facts: analysis.facts,
       visualTraits: analysis.visualTraits,
       tags: analysis.tags,
-      alertSuggested: analysis.alertSuggested,
-      alertReason: analysis.alertReason,
       hudText: `${analysis.hudLine1}\n${analysis.hudLine2}`,
     });
     return Response.json({ contact: updated, aiMode: analysis.mode });
@@ -77,6 +75,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const owner = await requireUser(request);
+    if (!hasUserConsent(owner)) throw new Error("CONSENT_REQUIRED");
     const payload = (await request.json()) as { contactUserId?: string; memoIndex?: number; memo?: string };
     const contactUserId = payload.contactUserId?.trim() || "";
     const memo = payload.memo?.trim() || "";
@@ -99,6 +98,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const owner = await requireUser(request);
+    if (!hasUserConsent(owner)) throw new Error("CONSENT_REQUIRED");
     const payload = (await request.json()) as { contactUserId?: string; memoIndex?: number };
     const contactUserId = payload.contactUserId?.trim() || "";
     if (!contactUserId || !Number.isInteger(payload.memoIndex)) {

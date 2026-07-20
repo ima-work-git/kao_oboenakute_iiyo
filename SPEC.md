@@ -1,202 +1,136 @@
-# Hello Again — 顔を覚えなくても、再会の瞬間に文脈が戻る
+# Hello Again — Current Product Specification
 
-OpenAI Build Week 3h ハッカソン / チーム3名 / 2026-07-18
+**OpenAI Build Week · Apps for Your Life · July 2026**
 
-> **2026-07-18 スマホMVPへの決定**
->
-> 評価者が追加機器なしで触れることを優先し、下記のBLE / Mac / Even G1案は将来構想として残す。
-> 現在の実装は、双方がスマホのブラウザでHello Againを開き、明示的に位置共有をONにする方式。
-> 一度交換した相手だけを対象に、直近1時間の位置を半径150mで照合する。バックグラウンドタブでの
-> 連続測位には依存せず、画面へ戻った時にも再取得する。相手の緯度・経度はUI/APIへ返さない。
->
-> **追加デモ機能:** メモに明記された服・髪型・メガネ・表情・雰囲気だけをOpenAIで抽出し、
-> `gpt-image-2`で非写実的な「AI想像ポートレート」を生成する。本人の顔の復元・照合・特定には使わず、
-> 画像は一時表示のみで保存しない。センシティブ属性は推測しない。
+> Authorship clarification: an early planning template said “team of three.” The submitted product was actually created by **Fumiya as one individual entrant, working with Codex**. No three-person human team built the submission.
 
-「人の名前を覚えるのが苦手」を、カメラも顔認証も使わずに解決する。
-一度出会って登録した人が近づくと、Even G1 スマートグラスのHUDに
-**名前・前回の会話・会話のきっかけ** が浮かぶ。
+## 1. Product promise
 
----
+**Never worry about remembering faces.**
 
-## 1. コンセプト
+Hello Again is a smartphone-first reunion assistant for people who struggle to remember faces or names. Two people exchange profiles once by QR or short code. At a later event, each person can voluntarily register one location snapshot; exchanged friends within approximately 150 meters appear with the private context the user previously saved.
 
-- **課題**: 2回目に会った人の名前が出てこない。聞き直すのは失礼で、会話が上滑りする。
-- **解決**: BLE近接検知で「再会」を検出し、グラスに名前+前回の文脈を耳打ちする。
-  **会いたい人には名前と話題を、避けたい人には警告を。**
-- **思想**: Metaは顔認証(Name Tag)でこれをやろうとして批判を浴びている。
-  本作は **相互同意ベース + カメラレス**。G1にカメラが無いことを弱点でなく思想として語る。
+The working submission requires only a smartphone browser. It does not require a PC, dedicated Bluetooth device, native installation, camera-based face capture, or smart glasses.
 
-## 2. 機器構成と登場人物
+## 2. Current user experience
 
-| 役割 | 持ち物 | やること |
+### First use and consent
+
+1. The browser language is detected; the user can choose among Japanese, English, Simplified Chinese, Korean, Spanish, French, German, and Portuguese.
+2. Before any login, guest mode, or judge demo, the user must explicitly check and accept:
+   - the Terms of Use;
+   - the Privacy Policy and personal-data handling; and
+   - sending written appearance notes to OpenAI for photorealistic fictional memory-image generation, plus responsibility to enter another person’s data only with lawful authority or permission.
+3. Consent is versioned and recorded locally. When a profile exists, the current consent version and timestamps are also stored in D1. Existing profiles must consent to the current version before using the app.
+
+### Profile and account
+
+- Set a name, Roman-letter pronunciation, organization, and optional avatar.
+- Link a ChatGPT-verified email to restore the profile on another device or in private browsing.
+- Edit the profile, change/relink email, sign out, or permanently delete the account and stored data from the hamburger menu.
+
+### One-time exchange
+
+- Show a QR code containing an exchange URL, scan the other user’s QR with the phone camera, or enter a six-character exchange code.
+- Only mutually exchanged profiles can appear in one another’s friend and nearby results.
+- With browser permission, exchange confirmation may store a single location snapshot in both exchange histories. It does not start continuous tracking.
+
+### Private memory support
+
+- Save, edit, or delete the original private note and a private nickname.
+- Use the smartphone keyboard’s built-in dictation; no separate speech-recognition service is required.
+- GPT-5.6 Structured Outputs extracts only explicitly written facts, topics, and visual traits. The internal structure is hidden from the interface; the editable original note remains the source of truth.
+- AI does **not** judge whether someone is dangerous, trustworthy, desirable, or a “caution person.” A private caution flag can be set or removed only by the user.
+
+### Photorealistic fictional memory images
+
+- On request, GPT Image 2 generates a face view and full-body view from written visual traits.
+- Photorealism is intentional because the image is a practical memory aid. The prompt preserves explicitly written gender expression, age range, body build, hair, clothing, and accessories without beautifying away important details.
+- The service does not use the person’s photograph as the image-generation input and does not perform face recognition, face matching, biometric enrollment, or identity reconstruction.
+- Every output is labeled as an AI-imagined fictional aid that may be inaccurate and must not be used for identification, publication, surveillance, or decisions about the person.
+- Generated images are privately stored in Cloudflare R2 so the most recent selected pair can reappear in friend and nearby lists. A user can compare the previous and current pair and keep one.
+
+### Nearby mode
+
+- Tapping **Register this location (1 hour)** calls browser geolocation once.
+- The app stores the snapshot and timestamp. It does not call `watchPosition`, follow movement, or refresh in the background.
+- A snapshot stops being used for matching after one hour. Moving requires another explicit update.
+- Matching happens on the server. Friends receive only a nearby result and rounded distance; another person’s exact coordinates are not returned to the client UI.
+
+## 3. Judge demo
+
+- No signup or real location permission is required after consent.
+- The demo creates one fictional English judge profile, twenty fictional exchanged friends, and ten nearby friends around Shibuya Solasta Conference.
+- Names, organizations, notes, prompts, and visual traits are fictional and English-only.
+- The demo supports note editing/deletion, private caution flags, nearby navigation, and live imagined-image generation.
+
+## 4. OpenAI usage
+
+### GPT-5.6 (`gpt-5.6-luna`)
+
+- Responses API with strict JSON schema and `store: false`.
+- Extracts explicit facts, tags, and visual traits and writes two short reunion prompts.
+- Must not infer unstated sensitive traits or make safety, trustworthiness, personality, or social-value classifications.
+
+### GPT Image 2 (`gpt-image-2`)
+
+- Generates one photorealistic face close-up and one head-to-toe image from text notes.
+- Uses a fictional, non-identifying subject instruction and prohibits public-figure resemblance, logos, watermarks, and unstated sensitive traits.
+
+## 5. Data and privacy
+
+| Data | Storage | Visibility / lifetime |
 |---|---|---|
-| 装着者(自分) | Mac + Even G1 | BLEスキャン、AI処理、HUD表示 |
-| 相手(登録者) | 自分のスマホのみ | QRを読んで名前を入力、BLEでIDを発信 |
+| Profile and verified email | Cloudflare D1 | Exchanged contacts; retained until deletion or service cleanup |
+| Session token | D1 + local storage | User device/server only |
+| Exchange history | D1 | Each participant’s own history |
+| Original notes, nickname, manual caution flag | D1 | Author only |
+| AI-extracted facts and visual traits | D1 | Internal processing only |
+| Location snapshot | D1 | Matching only for one hour; exact coordinates are not shown to friends |
+| Generated images | Cloudflare R2 | Owner only; retained until replaced, account deletion, or service cleanup |
+| Policy version and consent timestamps | D1 | Compliance record for that profile |
 
-Macが全処理のハブ。スマホアプリ開発はしない(3hでは無理、かつ不要)。
+Account deletion removes the profile, owned contacts, notes, exchange links, and known R2 portrait objects. The prototype may retain only limited records where legally required or necessary to prevent abuse.
 
-## 3. コア体験フロー
+## 6. Architecture
 
-### A. 初回交換(名刺交換に相当)
-
-1. 装着者のMac画面(or 印刷物)に **QRコード** を常時表示。中身は登録フォームのURL。
-2. 相手がスマホカメラでQRを読む → ブラウザで登録フォームが開く(**インストール不要**)。
-3. 相手が自分で入力: 名前(+ふりがな)・所属・ひとことタグ。→ 送信でサーバーがUUID発行。
-4. フォーム完了画面に「BLE発信の設定手順」を表示(デモでは nRF Connect を使用。§5参照)。
-5. 別れた後、装着者がダッシュボードでその人に**テキストメモ**を入力
-   (「猫飼ってる、Python得意」/「強引な勧誘だった」)。
-   → GPTが {事実抽出, タグ, 注意人物候補の判定, HUD文の事前生成} を行いプロフィールに紐付け。
-
-ポイント: 名前は**相手本人が入力**するので表記が正確。会話の記憶は**装着者のメモ**からGPTが構造化する。
-
-### B. 再会(本命のデモシーン)
-
-1. 相手が近づく → Macが相手のUUIDをBLEスキャンで検知(RSSIしきい値で「近い」を判定)。
-2. サーバーがプロフィール+前回メモをGPTに渡し、HUD用の2行テキストを生成。
-3. G1のHUDに表示:
-   ```
-   田中太郎さん(○○社)
-   前回:猫の話 →「ネコ元気ですか?」
-   ```
-4. 同一人物への再通知は10分間クールダウン。
-
-### C. 警告(注意人物の接近)
-
-メモで `alert_level=caution` が付いた相手は、名前リマインドの代わりに**回避のための警告**を出す。
-
-1. 通常より**遠い距離で先に発火**(-75dBm、約5〜10m。気付いてから離れる余地を作る)。
-2. HUD表示は通常と明確に区別(単色HUDなので記号と文面で表現):
-   ```
-   !! 佐藤さん 接近中
-   前回:しつこい勧誘 → 離脱推奨
-   ```
-3. 通常通知より**常に優先**(表示キューに割り込み)。クールダウンも短め(2分)。
-4. メモと警告フラグは**装着者のローカルにのみ保存され、相手には一切見えない**。
-   名刺の裏に書くメモと同じ位置づけであり、共有ブラックリストは作らない(ピッチでも明言する)。
-
-## 4. 名刺交換方式の決定理由
-
-| 案 | 判定 | 理由 |
-|---|---|---|
-| **QR=登録フォームURL(採用)** | ◎ | 相手はアプリ不要・ブラウザだけ。名前の表記が正確。実装が最軽量 |
-| QRにvCardを埋めて読み取る | △ | Mac側でカメラ読み取り+パースの実装が増える。入力内容の柔軟性も低い |
-| NFC / AirDrop | ✕ | 3hで扱うにはAPI制約が重い |
-| 音声だけで登録(名前を聞き取る) | △ | 聞き取りミス(漢字表記)が致命的。ボイスメモは補助に回す |
-
-フォームURLは `cloudflared tunnel --url localhost:8000` で公開URL化しておく
-(会場Wi-Fiのクライアント分離対策。ローカルIP直打ちより確実)。
-
-## 5. BLE ID設計(最重要の技術判断)
-
-スマホはBLE MACアドレスをランダム化するため、**相手側が自発的にIDを発信する**必要がある。
-
-- **各ユーザーのIDを128bitのカスタムService UUIDとして発信**する。
-  例: `4E554B4F-0001-XXXX-XXXX-XXXXXXXXXXXX`(先頭を固定プレフィックスにし、後半をユーザーID)。
-- Mac側は bleak でスキャンし、プレフィックス一致でユーザー特定。
-- **デモでは相手のスマホに nRF Connect(無料アプリ)** を入れてもらい、
-  フォーム完了画面に表示されたUUIDをAdvertiserに設定してもらう。
-  iOSはアプリがフォアグラウンドの間だけService UUIDを発信する → デモ中は画面を開いたままにする。
-- ピッチでは「本番は専用アプリ/既存名刺アプリ(Eight等)への組み込みで自動発信」と説明。
-
-### 検知ロジック
-
-- 常時スキャン。登録済みUUIDを **RSSI ≥ -60dBm(約2〜3m)で2スキャン連続** 検知したら発火。
-- **ヒステリシス**: 発火は-60dBm、解除は-75dBmを下回ってから。境界付近での通知チラつきを防ぐ。
-- 発火後、同一UUIDは10分クールダウン。
-- **複数人同時検知**: HUDに出すのは一度に1人。RSSIが強い(=近い)順にキューイングし、8秒間隔で順送り。
-- **注意人物は特別扱い**: 発火しきい値を-75dBm(遠め)にし、検知したらキューに割り込みで最優先表示。
-- 検知までの遅延は混雑会場で2〜3秒を見込む。しきい値は現地で調整できるよう設定値化しておく。
-- 人体は2.4GHzを吸収するためRSSIは±数mブレる前提。「正確な距離計」ではなく「会話が始まる距離のトリガー」と割り切る。
-- (ストレッチ)2段階通知: 弱電波で「〇〇さんが会場にいます」、強電波で接近ポップ。
-
-## 6. OpenAI API活用ポイント(審査対策)
-
-1. **テキストメモ→記憶化**: 装着者の自由文メモをGPTで {事実抽出, タグ, alert_level候補} に構造化。
-   「強引な勧誘だった」等のネガティブな内容なら caution を**提案**する(最終確定は装着者がボタンで承認。
-   AIの誤判定で人を警告対象にしない)。
-2. **HUD文の事前生成**: プロフィール+メモ履歴から「2行以内・会話のきっかけ付き」
-   (cautionなら「理由+離脱推奨」)を生成。
-   G1は狭い単色HUDなので**要約こそがAIの仕事**、という筋の通った使い方になる。
-   生成は**メモ登録時に実行してキャッシュ**する(検知時に生成すると1〜2秒遅れて
-   「ポンッ」の即時性が死ぬため。検知→表示は1秒以内が目標)。
-
-## 7. G1表示仕様
-
-- 単色グリーン・テキスト中心。`even_glasses`(Python)の send_text を使用。
-- **最大2行・1行全角13文字目安**。1行目=名前+所属、2行目=前回の文脈 or 会話のきっかけ。
-- 警告時は1行目冒頭に `!!` を付け、2行目を「理由 → 離脱推奨」にする(単色HUDでの視覚的区別)。
-- 表示は8秒で自動消去(会話の邪魔をしない)。警告のみ12秒表示。
-
-## 8. システム構成
-
-```
-相手のスマホ ──(QR読取→ブラウザ)──> 登録フォーム ─┐
-相手のスマホ ──(BLE advertise: UUID)──┐           │
-                                      v           v
-                          Mac: FastAPIサーバー(SQLite/JSON)
-                            ├─ bleakでBLEスキャン(検知エンジン)
-                            ├─ OpenAI API(メモ構造化/alert判定/HUD文生成)
-                            ├─ even_glasses ──(BLE)──> G1 HUD
-                            └─ ダッシュボード+HUDシミュレーター(Web)
+```text
+Smartphone browser (Next.js / React)
+  ├─ language, explicit consent, profile, QR/camera exchange
+  ├─ private notes, manual caution flag, portrait selection
+  └─ explicit one-time geolocation snapshot
+             │ HTTPS
+             ▼
+Cloudflare Worker API (vinext)
+  ├─ D1: profiles, consent, contacts, notes, exchanges, location
+  ├─ R2: privately served generated images
+  ├─ OpenAI Responses API: GPT-5.6 Structured Outputs
+  └─ OpenAI Image API: GPT Image 2 fictional memory images
 ```
 
-技術スタック: Python / FastAPI / bleak / even_glasses / OpenAI SDK / 素のHTML+JS。
-リポジトリ1つ、プロセスは「サーバー」と「検知エンジン」の2本(検知→サーバーへHTTP POST)。
+## 7. Safety constraints
 
-## 9. データモデル
+- No facial recognition, face matching, biometric templates, or real-face database.
+- No AI-generated caution/safety/trustworthiness classification.
+- No continuous or background location tracking.
+- No map or exact coordinates exposed to friends.
+- No shared blacklist; notes, nicknames, portraits, and caution flags are private.
+- Explicit, versioned first-use consent for Terms, Privacy Policy, and AI image processing.
+- Another person’s data may be entered only with lawful authority or permission.
+- AI output is not evidence of identity or actual appearance.
 
-```json
-{
-  "uuid": "nuko-0001",
-  "name": "田中太郎",
-  "reading": "たなか たろう",
-  "org": "○○社",
-  "tags": ["猫", "Python"],
-  "memos": [
-    {"date": "2026-07-18", "text": "猫を2匹飼っている。Python得意。ハッカソン常連"}
-  ],
-  "alert_level": "normal",
-  "alert_reason": null,
-  "hud_text": "田中太郎さん(○○社)\n前回:猫の話 →「ネコ元気ですか?」",
-  "last_seen": "2026-07-18T14:30:00+09:00",
-  "cooldown_until": null
-}
-```
+## 8. Future native app and smart glasses
 
-## 10. 3時間タイムライン & 分担
+The submitted product is the smartphone web app above. A future native iOS/Android app could add opt-in background notifications and rotating anonymous Bluetooth Low Energy identifiers, with no dedicated hardware. Resolution would occur only for already-exchanged users who both enabled an event mode. BLE would be a probabilistic reunion signal, not a precise distance meter.
 
-| 時間 | A: グラス/BLE係 | B: AI/サーバー係 | C: デモ/保険係 |
-|---|---|---|---|
-| 0:00-0:20 | **G1にsend_text疎通(最優先)** | FastAPI雛形+データモデル | リポジトリ/画面設計/QR生成 |
-| 0:20-1:10 | bleakスキャン+RSSI判定 | 登録フォーム+テキストメモ→構造化(alert判定含む) | 登録フォームUI+HUDシミュレーター |
-| 1:10-2:00 | 検知→サーバーPOST連携 | HUD文生成+G1へ送信API | ダッシュボード(検知ログ+顔写真) |
-| 2:00-2:30 | **結合テスト(本物のスマホで)** | 同左 | ピッチ資料 |
-| 2:30-3:00 | リハーサル2回 | バグ修正のみ | デモ台本確定 |
+An Even G2 companion can later display the same name, private context, and conversation prompt on the glasses HUD while the smartphone remains the consent, account, networking, and location hub. This future work is isolated from the submitted web build and is not claimed as part of the working Build Week product.
 
-**30分ルール**: G1疎通が0:30までに取れなければ、以降は全員シミュレーター前提で作る(Cの画面が主役に昇格)。
+## 9. Acceptance criteria
 
-## 11. リスクとフォールバック
-
-| リスク | 対策 |
-|---|---|
-| G1にBLEで繋がらない | HUDシミュレーター(Web)でデモ。「量産時はどのグラスにも載る」と言い切る |
-| 会場の2.4GHz混雑で検知が不安定 | RSSIしきい値を現地調整。最悪、ダッシュボードの「手動検知ボタン」で発火 |
-| 会場Wi-Fiでスマホ→Macが届かない | cloudflaredで公開URL化。予備はiPhoneテザリングに全端末集約 |
-| G1がスマホの公式アプリに接続を取られる | デモ前に公式アプリをBluetoothごとオフにする手順を台本に明記 |
-
-## 12. デモ台本(90秒)
-
-1. 審査員に「昨日会った人の名前、全員言えますか?」と問う(課題提起)。
-2. その場で審査員にQRを読んで登録してもらう(10秒で終わることを見せる)。
-3. その場でテキストメモを入力 → ダッシュボードに構造化された記憶とHUD文が出る。
-4. 審査員がいったん離れて、歩いて近づく → **HUDに名前が浮かぶ瞬間**を実況(画面ミラーも併用)。
-5. チームメンバーが「しつこい勧誘役」として接近 → **HUDに警告が出る**(笑いどころ+安全ユースケース)。
-6. 締め: 「Metaは顔認証でこれをやろうとして炎上している。私たちはカメラなし・相互同意で解決します。
-   メモも警告もあなたのローカルだけ。名刺の裏メモのデジタル版です」
-
-## 13. ピッチ用・本番構想(実装しない)
-
-- 専用アプリ or Eight/Sansan連携でBLE発信を自動化
-- 展示会・カンファレンス「イベントモード」(主催者が全員分を一括オプトイン)がGTM
-- 会うたびRealtime APIでメモが育つ「人間関係の記憶装置」
+- Fresh users cannot enter login, guest mode, or judge demo without all three explicit consents.
+- Current consent is enforced server-side before OpenAI note processing or image generation.
+- GPT outputs contain no caution-person recommendation fields.
+- A user can delete their account and stored application data from Settings.
+- Terms and Privacy Policy are available in English and Japanese.
+- The full judge path works on a smartphone without external hardware or location permission.
+- `npm test` and `npm run lint` pass before publication.

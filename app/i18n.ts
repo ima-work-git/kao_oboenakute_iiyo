@@ -59,9 +59,18 @@ const ja = {
   "profile.creating": "作成中…",
   "profile.visibility": "プロフィールは交換した相手にだけ表示されます。",
   "profile.you": "あなた",
-  "terms.consentBefore": "本サービスを利用することで、",
+  "terms.consentBefore": "利用前に、",
   "terms.link": "利用規約",
-  "terms.consentAfter": "に同意したものとみなされます。",
+  "terms.consentAfter": "への明示同意が必要です。",
+  "privacy.link": "プライバシーポリシー",
+  "consent.title": "利用前の確認",
+  "consent.intro": "3項目を確認し、同意した場合だけHello Againを利用できます。",
+  "consent.terms": "利用規約を読み、同意します。",
+  "consent.privacy": "プライバシーポリシーを読み、個人情報の取扱いに同意します。",
+  "consent.image": "入力した外見メモがOpenAIへ送信され、本人写真ではない実写風の架空イメージ生成に使われることに同意します。第三者の情報は、記録・処理する権限または許可がある場合だけ入力します。",
+  "consent.accept": "同意して続ける",
+  "consent.required": "3項目すべてへの同意が必要です。",
+  "consent.saved": "同意内容を保存しました。",
   "header.user": "{name}さん",
   "header.locationOn": "現在地登録中",
   "header.locationOff": "現在地未登録",
@@ -167,6 +176,12 @@ const ja = {
   "settings.saveChanges": "変更を保存",
   "settings.logoutDescription": "この端末のHello Againをログアウトします。メール連携済みなら、もう一度ログインして復元できます。",
   "settings.signOut": "ログアウトする",
+  "settings.privacy": "プライバシーとデータ",
+  "settings.privacySummary": "規約・保存データ・アカウント削除",
+  "settings.privacyDescription": "規約とプライバシーポリシーを確認し、プロフィール、交換履歴、非公開メモ、保存画像を削除できます。この操作は取り消せません。",
+  "settings.deleteAccount": "アカウントと全データを削除",
+  "settings.deleteConfirm": "プロフィール、交換履歴、メモ、保存画像を完全に削除します。取り消せません。続けますか？",
+  "settings.deleteSuccess": "アカウントとデータを削除しました。",
   "nav.main": "メインメニュー",
   "nav.exchange": "交換",
   "nav.nearby": "近くの人",
@@ -207,7 +222,7 @@ const ja = {
   "toast.noteUpdated": "メモを更新しました。",
   "toast.noteDeleted": "メモを削除しました。",
   "toast.cautionSaved": "注意人物として保存しました",
-  "toast.cautionRejected": "注意候補を却下しました",
+  "toast.cautionRejected": "注意フラグを解除しました",
   "toast.portraitsCreated": "顔アップと全身の2枚を作りました",
   "toast.sketchesCreated": "2枚のデモスケッチを作りました",
   "toast.previousChosen": "前回の画像に戻して採用しました",
@@ -260,14 +275,14 @@ const en: Messages = {
   "brand.tagline": "Never worry about remembering faces.", "loading": "Getting Hello Again ready",
   "onboarding.headline": "Reconnect, even when you cannot recall the face.", "onboarding.lead": "Remembering faces is hard, and profile photos may be years out of date or look nothing like someone at an event. Exchange once; next time, your phone restores the context you actually need.", "onboarding.privacy": "Your location is registered only when you choose. There is no automatic tracking or background sharing.",
   "auth.welcome": "Welcome to Hello Again", "auth.emailLogin": "Sign in with email", "auth.emailDescription": "Restore your profile in private browsing or on another device.", "auth.verify": "Verify email with ChatGPT", "auth.judgeDivider": "or try the judge demo now", "auth.experience": "Demo", "auth.judgeStart": "Start judge demo", "auth.judgeMeta": "No signup · 20 friends · 10 at Shibuya Solasta", "auth.guest": "Continue as guest", "auth.noPassword": "Hello Again never stores your password. Only a verified email is linked to your profile.",
-  "profile.yours": "Your profile", "profile.verified": "Email verified", "profile.guest": "You are using guest mode. Your profile cannot be restored on another device.", "profile.signIn": "Sign in with email", "profile.photo": "Profile photo", "profile.choose": "Choose", "profile.change": "Change", "profile.removePhoto": "Remove photo", "profile.name": "Name", "profile.reading": "Name pronunciation (Roman letters)", "profile.readingPlaceholder": "e.g. Taro Yamada", "profile.readingHelp": "Enter Roman letters so people who speak another language can read your name.", "profile.organization": "Organization", "profile.create": "Get started", "profile.creating": "Creating…", "profile.visibility": "Only people you exchange with can see your profile.", "profile.you": "You", "terms.consentBefore": "By using this service, you agree to the ", "terms.link": "Terms of Use", "terms.consentAfter": ".",
+  "profile.yours": "Your profile", "profile.verified": "Email verified", "profile.guest": "You are using guest mode. Your profile cannot be restored on another device.", "profile.signIn": "Sign in with email", "profile.photo": "Profile photo", "profile.choose": "Choose", "profile.change": "Change", "profile.removePhoto": "Remove photo", "profile.name": "Name", "profile.reading": "Name pronunciation (Roman letters)", "profile.readingPlaceholder": "e.g. Taro Yamada", "profile.readingHelp": "Enter Roman letters so people who speak another language can read your name.", "profile.organization": "Organization", "profile.create": "Get started", "profile.creating": "Creating…", "profile.visibility": "Only people you exchange with can see your profile.", "profile.you": "You", "terms.consentBefore": "Before using the service, you must explicitly agree to the ", "terms.link": "Terms of Use", "terms.consentAfter": ".", "privacy.link": "Privacy Policy", "consent.title": "Before you continue", "consent.intro": "Review all three items. You can use Hello Again only if you agree.", "consent.terms": "I have read and agree to the Terms of Use.", "consent.privacy": "I have read the Privacy Policy and consent to the handling of personal data.", "consent.image": "I consent to sending written appearance notes to OpenAI to create photorealistic fictional memory images—not photographs of the real person. I will enter another person’s information only when I have authority or permission to record and process it.", "consent.accept": "Agree and continue", "consent.required": "Agreement to all three items is required.", "consent.saved": "Your consent has been saved.",
   "header.user": "{name}", "header.locationOn": "Location registered", "header.locationOff": "No location", "header.openMenu": "Open menu",
   "nearby.judge": "Judge demo", "nearby.judgeTitle": "Reunion at Shibuya Solasta", "nearby.judgeBody": "You have exchanged with 20 people. Ten distinctive friends are nearby. Open a friend to try notes and imagined portraits.", "nearby.title": "Find people nearby", "nearby.activeDescription": "{count} friends are within 150 m of your registered point. {location}. Update your location after you move.", "nearby.inactiveDescription": "This saves one snapshot when you tap. It does not update as you move and expires after one hour. A friend appears when they have also registered a point within about 150 m.", "nearby.update": "Update location (reset 1 hour)", "nearby.register": "Register this location (1 hour)", "nearby.overwrite": "Replaces the point with your current location", "nearby.noTracking": "No live tracking", "nearby.remove": "Remove registered location", "nearby.friends": "Friends nearby", "nearby.noOrganization": "No organization", "nearby.noNotes": "No notes yet", "nearby.cautionLink": "View caution and notes", "nearby.detailLink": "View notes and images", "nearby.searching": "Looking for friends", "nearby.registerPrompt": "Register your location to see nearby friends", "nearby.demoDescription": "Try a reunion notification with just one phone.", "nearby.demoButton": "Try in 30 seconds", "nearby.privacy": "We take one location snapshot when you tap Register. There is no live tracking. It expires after one hour, and friends never see your exact location.",
   "friends.title": "Friends", "friends.empty": "No friends yet", "friends.emptyDescription": "Exchange once using a QR or six-character code.", "friends.exchange": "Exchange", "friends.exchangeSummary": "Exchanged: {time} · {place}", "friend.privateNickname": "Private nickname", "friend.nicknamePlaceholder": "e.g. Tanaka in the red cap", "friend.exchangedAt": "Exchanged {time}", "friend.exchangeHistory": "Exchange date and place", "friend.map": "View map",
   "portrait.title": "Image from your notes", "portrait.subtitle": "Create a face close-up and full-body image together", "portrait.currentCandidate": "Current option", "portrait.face": "Face", "portrait.body": "Full body", "portrait.faceAlt": "Face imagined from notes about {name}", "portrait.bodyAlt": "Full-body image imagined from notes about {name}", "portrait.compare": "Compare with the previous images", "portrait.chooseFinal": "Choose which pair to keep", "portrait.previousFace": "Previous face", "portrait.previousBody": "Previous full body", "portrait.restorePrevious": "Keep previous pair", "portrait.useCurrent": "Keep current pair", "portrait.loadingPrevious": "Loading previous images…", "portrait.generatingTitle": "Creating a face and full-body image", "portrait.waitingNote": "This can take a moment. Keep this screen open.", "portrait.hint": "Images are generated from your original notes. Specific details about gender, age, body type, clothing, and hair produce a more faithful result.", "portrait.generating": "Creating 2 images…", "portrait.regenerate": "Regenerate 2 images", "portrait.create": "Create face and full body", "portrait.disclaimer": "This image does not recreate or identify the real person.",
   "notes.title": "Notes", "notes.latest": "Latest note", "notes.empty": "No notes yet. Save a feature below.", "notes.closePrevious": "Hide previous notes", "notes.showPrevious": "View previous notes ({count})", "notes.previous": "Previous notes", "notes.add": "Add note", "notes.question": "What were they like?", "notes.keyboardDictation": "🎙 Keyboard dictation", "notes.dictationToast": "Tap the microphone on your keyboard to see your speech appear here live.", "notes.placeholder": "e.g. A heavyset man in his 40s, black hoodie, owns two cats.", "notes.dictationHelp": "Use your phone keyboard microphone. Your words appear in this field live.", "notes.saveFeatures": "Save features", "notes.edit": "Edit note", "notes.deleteConfirm": "Delete this note?", "caution.remove": "Remove caution flag", "caution.add": "Mark as caution", "caution.private": "Only you can see this",
   "exchange.title": "Exchange with a friend", "exchange.locationNote": "When a QR scan or code exchange is confirmed, this device takes one location snapshot. With permission, the exchange time and approximate place are saved in both exchange histories.", "exchange.scan": "Scan their QR with the camera", "exchange.scanDialog": "Scan QR code with camera", "exchange.scanTitle": "Scan their QR", "exchange.showQr": "Show this QR", "exchange.qrAlt": "Hello Again exchange QR code", "exchange.qrCreating": "Creating QR…", "exchange.code": "Exchange code", "exchange.share": "Share exchange link", "exchange.manual": "If the QR cannot be scanned, enter the exchange code", "exchange.exchanging": "Exchanging…", "exchange.submit": "Exchange with this person",
-  "settings.title": "Settings", "settings.account": "{name}'s account", "settings.email": "Link or change email", "settings.emailMissing": "No email linked", "settings.profile": "Profile settings", "settings.profileSummary": "Photo, name, organization", "settings.logout": "Sign out", "settings.logoutSummary": "End this device session", "settings.linkedEmail": "Linked email", "settings.emailBenefit": "Use the same profile on another device", "settings.emailDescription": "Only an email verified by ChatGPT is linked. Hello Again never stores your password.", "settings.changeEmail": "Change to another email", "settings.relinkEmail": "Change or relink email", "settings.linkEmail": "Link email", "settings.emailNote": "To change email, sign out of ChatGPT and verify the new address.", "settings.saveChanges": "Save changes", "settings.logoutDescription": "Sign out of Hello Again on this device. If your email is linked, you can sign in again to restore your profile.", "settings.signOut": "Sign out",
+  "settings.title": "Settings", "settings.account": "{name}'s account", "settings.email": "Link or change email", "settings.emailMissing": "No email linked", "settings.profile": "Profile settings", "settings.profileSummary": "Photo, name, organization", "settings.logout": "Sign out", "settings.logoutSummary": "End this device session", "settings.linkedEmail": "Linked email", "settings.emailBenefit": "Use the same profile on another device", "settings.emailDescription": "Only an email verified by ChatGPT is linked. Hello Again never stores your password.", "settings.changeEmail": "Change to another email", "settings.relinkEmail": "Change or relink email", "settings.linkEmail": "Link email", "settings.emailNote": "To change email, sign out of ChatGPT and verify the new address.", "settings.saveChanges": "Save changes", "settings.logoutDescription": "Sign out of Hello Again on this device. If your email is linked, you can sign in again to restore your profile.", "settings.signOut": "Sign out", "settings.privacy": "Privacy and data", "settings.privacySummary": "Policies, stored data, account deletion", "settings.privacyDescription": "Review the policies or delete your profile, exchanges, private notes, and saved images. Deletion cannot be undone.", "settings.deleteAccount": "Delete account and all data", "settings.deleteConfirm": "Permanently delete your profile, exchanges, notes, and saved images? This cannot be undone.", "settings.deleteSuccess": "Your account and data were deleted.",
   "nav.main": "Main menu", "nav.exchange": "Exchange", "nav.nearby": "Nearby", "nav.friends": "Friends",
   "location.none": "No location is registered", "location.validUntil": "Registered point is valid until {time}", "location.demoValidUntil": "Shibuya Solasta registered until {time}", "location.registering": "Registering your location…", "location.registered": "Location registered with approximately {accuracy} m accuracy.", "location.unsupported": "This browser does not support location.", "location.checking": "Checking your location…", "location.failed": "Could not register your location", "location.permission": "Allow location access to register the point where you tap.", "location.removeFailed": "Could not remove the registered location.", "location.expired": "Your registered location has expired", "location.demoLabel": "Shibuya Solasta judge demo", "location.demoRegistered": "{place} registered until {time}", "location.current": "Current location", "location.tokyoStation": "Near Tokyo Station", "place.none": "No place was recorded", "place.shibuya": "Near Shibuya Solasta Conference", "place.coordinates": "Near {lat}, {lng}",
   "scanner.preparing": "Preparing camera…", "scanner.aim": "Place their QR code inside the frame", "scanner.own": "This is your QR. Scan the other person's QR.", "scanner.found": "QR found. Exchanging…", "scanner.unavailable": "Camera unavailable. Allow camera access in settings.", "scanner.unsupported": "This browser cannot use the camera. Enter the exchange code instead.",
@@ -416,6 +431,50 @@ const pt: Messages = {
 
 const TRANSLATIONS: Record<AppLanguage, Messages> = { ja, en, zh, ko, es, fr, de, pt };
 
+const POLICY_TRANSLATIONS: Partial<Record<AppLanguage, Partial<Record<TranslationKey, string>>>> = {
+  zh: {
+    "terms.consentBefore": "使用前，必须明确同意", "terms.link": "使用条款", "terms.consentAfter": "。",
+    "privacy.link": "隐私政策", "consent.title": "使用前确认", "consent.intro": "请确认以下三项。全部同意后才能使用Hello Again。", "consent.terms": "我已阅读并同意使用条款。", "consent.privacy": "我已阅读隐私政策，并同意个人信息的处理。", "consent.image": "我同意将外观文字备注发送给OpenAI，用于生成非本人照片的写实虚构记忆图像。只有在有权或获得许可时，我才会输入他人的信息。", "consent.accept": "同意并继续", "consent.required": "必须同意全部三项。", "consent.saved": "同意内容已保存。",
+    "settings.privacy": "隐私与数据", "settings.privacySummary": "政策、保存数据、删除账号", "settings.privacyDescription": "查看相关政策，或删除个人资料、交换记录、私密备注和已保存图片。删除后无法恢复。", "settings.deleteAccount": "删除账号和所有数据", "settings.deleteConfirm": "永久删除个人资料、交换记录、备注和图片？此操作无法撤销。", "settings.deleteSuccess": "账号和数据已删除。",
+  },
+  ko: {
+    "terms.consentBefore": "이용 전에 ", "terms.link": "이용약관", "terms.consentAfter": "에 명시적으로 동의해야 합니다.",
+    "privacy.link": "개인정보 처리방침", "consent.title": "이용 전 확인", "consent.intro": "세 항목을 확인해 주세요. 모두 동의해야 Hello Again을 사용할 수 있습니다.", "consent.terms": "이용약관을 읽고 동의합니다.", "consent.privacy": "개인정보 처리방침을 읽고 개인정보 처리에 동의합니다.", "consent.image": "외모 메모를 OpenAI로 보내 실제 인물 사진이 아닌 실사풍 가상 기억 이미지를 만드는 데 동의합니다. 권한이나 허락이 있을 때만 타인의 정보를 입력합니다.", "consent.accept": "동의하고 계속", "consent.required": "세 항목 모두 동의해야 합니다.", "consent.saved": "동의 내용이 저장되었습니다.",
+    "settings.privacy": "개인정보 및 데이터", "settings.privacySummary": "정책, 저장 데이터, 계정 삭제", "settings.privacyDescription": "정책을 확인하거나 프로필, 교환 기록, 비공개 메모와 저장 이미지를 삭제합니다. 되돌릴 수 없습니다.", "settings.deleteAccount": "계정과 모든 데이터 삭제", "settings.deleteConfirm": "프로필, 교환 기록, 메모와 이미지를 영구 삭제할까요? 되돌릴 수 없습니다.", "settings.deleteSuccess": "계정과 데이터가 삭제되었습니다.",
+  },
+  es: {
+    "terms.consentBefore": "Antes de usar el servicio, debes aceptar expresamente los ", "terms.link": "Términos de uso", "terms.consentAfter": ".",
+    "privacy.link": "Política de privacidad", "consent.title": "Antes de continuar", "consent.intro": "Revisa los tres puntos. Solo puedes usar Hello Again si aceptas todos.", "consent.terms": "He leído y acepto los Términos de uso.", "consent.privacy": "He leído la Política de privacidad y consiento el tratamiento de datos personales.", "consent.image": "Consiento enviar notas escritas sobre apariencia a OpenAI para crear imágenes ficticias fotorrealistas, no fotos de la persona real. Solo introduciré datos de otra persona si tengo autoridad o permiso.", "consent.accept": "Aceptar y continuar", "consent.required": "Debes aceptar los tres puntos.", "consent.saved": "Tu consentimiento se ha guardado.",
+    "settings.privacy": "Privacidad y datos", "settings.privacySummary": "Políticas, datos guardados y eliminación", "settings.privacyDescription": "Consulta las políticas o elimina tu perfil, intercambios, notas privadas e imágenes guardadas. No se puede deshacer.", "settings.deleteAccount": "Eliminar cuenta y todos los datos", "settings.deleteConfirm": "¿Eliminar permanentemente perfil, intercambios, notas e imágenes? No se puede deshacer.", "settings.deleteSuccess": "La cuenta y los datos se eliminaron.",
+  },
+  fr: {
+    "terms.consentBefore": "Avant d’utiliser le service, vous devez accepter explicitement les ", "terms.link": "Conditions d’utilisation", "terms.consentAfter": ".",
+    "privacy.link": "Politique de confidentialité", "consent.title": "Avant de continuer", "consent.intro": "Vérifiez les trois points. Vous ne pouvez utiliser Hello Again que si vous les acceptez tous.", "consent.terms": "J’ai lu et j’accepte les Conditions d’utilisation.", "consent.privacy": "J’ai lu la Politique de confidentialité et j’accepte le traitement des données personnelles.", "consent.image": "J’accepte l’envoi de notes d’apparence à OpenAI pour créer des images fictives photoréalistes, et non des photos de la personne. Je ne saisirai les données d’un tiers qu’avec autorisation.", "consent.accept": "Accepter et continuer", "consent.required": "L’acceptation des trois points est obligatoire.", "consent.saved": "Votre consentement a été enregistré.",
+    "settings.privacy": "Confidentialité et données", "settings.privacySummary": "Politiques, données et suppression", "settings.privacyDescription": "Consultez les politiques ou supprimez profil, échanges, notes privées et images enregistrées. Cette action est irréversible.", "settings.deleteAccount": "Supprimer le compte et toutes les données", "settings.deleteConfirm": "Supprimer définitivement profil, échanges, notes et images ? Cette action est irréversible.", "settings.deleteSuccess": "Le compte et les données ont été supprimés.",
+  },
+  de: {
+    "terms.consentBefore": "Vor der Nutzung musst du den ", "terms.link": "Nutzungsbedingungen", "terms.consentAfter": " ausdrücklich zustimmen.",
+    "privacy.link": "Datenschutzerklärung", "consent.title": "Vor der Nutzung", "consent.intro": "Prüfe alle drei Punkte. Hello Again kann nur mit vollständiger Zustimmung genutzt werden.", "consent.terms": "Ich habe die Nutzungsbedingungen gelesen und stimme zu.", "consent.privacy": "Ich habe die Datenschutzerklärung gelesen und stimme der Verarbeitung personenbezogener Daten zu.", "consent.image": "Ich stimme zu, schriftliche Aussehensnotizen an OpenAI zu senden, um fotorealistische fiktive Erinnerungsbilder statt echter Fotos zu erstellen. Daten anderer gebe ich nur mit Befugnis oder Erlaubnis ein.", "consent.accept": "Zustimmen und fortfahren", "consent.required": "Alle drei Zustimmungen sind erforderlich.", "consent.saved": "Deine Zustimmung wurde gespeichert.",
+    "settings.privacy": "Datenschutz und Daten", "settings.privacySummary": "Richtlinien, Daten und Löschung", "settings.privacyDescription": "Prüfe die Richtlinien oder lösche Profil, Austausche, private Notizen und Bilder. Dies kann nicht rückgängig gemacht werden.", "settings.deleteAccount": "Konto und alle Daten löschen", "settings.deleteConfirm": "Profil, Austausche, Notizen und Bilder endgültig löschen? Dies kann nicht rückgängig gemacht werden.", "settings.deleteSuccess": "Konto und Daten wurden gelöscht.",
+  },
+  pt: {
+    "terms.consentBefore": "Antes de usar o serviço, você deve concordar expressamente com os ", "terms.link": "Termos de Uso", "terms.consentAfter": ".",
+    "privacy.link": "Política de Privacidade", "consent.title": "Antes de continuar", "consent.intro": "Revise os três itens. Você só pode usar o Hello Again se concordar com todos.", "consent.terms": "Li e concordo com os Termos de Uso.", "consent.privacy": "Li a Política de Privacidade e consinto com o tratamento de dados pessoais.", "consent.image": "Consinto em enviar notas escritas de aparência à OpenAI para criar imagens fictícias fotorrealistas, não fotos da pessoa real. Só inserirei dados de terceiros com autoridade ou permissão.", "consent.accept": "Concordar e continuar", "consent.required": "É necessário concordar com os três itens.", "consent.saved": "Seu consentimento foi salvo.",
+    "settings.privacy": "Privacidade e dados", "settings.privacySummary": "Políticas, dados e exclusão", "settings.privacyDescription": "Consulte as políticas ou exclua perfil, trocas, notas privadas e imagens salvas. Não é possível desfazer.", "settings.deleteAccount": "Excluir conta e todos os dados", "settings.deleteConfirm": "Excluir permanentemente perfil, trocas, notas e imagens? Não é possível desfazer.", "settings.deleteSuccess": "A conta e os dados foram excluídos.",
+  },
+};
+
+const MANUAL_CAUTION_REMOVED: Record<AppLanguage, string> = {
+  ja: "注意フラグを解除しました",
+  en: "Caution flag removed.",
+  zh: "已移除警惕标记。",
+  ko: "주의 표시를 해제했습니다.",
+  es: "Marca de alerta eliminada.",
+  fr: "Signalement privé retiré.",
+  de: "Private Warnmarkierung entfernt.",
+  pt: "Sinalização privada removida.",
+};
+
 export function isAppLanguage(value: string | null): value is AppLanguage {
   return LANGUAGE_OPTIONS.some((option) => option.code === value);
 }
@@ -433,9 +492,12 @@ export function preferredAppLanguage(locales: readonly string[]): AppLanguage {
 }
 
 export function translate(language: AppLanguage, key: TranslationKey, values: Record<string, string | number> = {}) {
+  const translated = key === "toast.cautionRejected"
+    ? MANUAL_CAUTION_REMOVED[language]
+    : POLICY_TRANSLATIONS[language]?.[key] ?? TRANSLATIONS[language][key];
   return Object.entries(values).reduce(
     (message, [name, value]) => message.replaceAll(`{${name}}`, String(value)),
-    TRANSLATIONS[language][key]
+    translated
   );
 }
 

@@ -5,14 +5,11 @@ export type MemoryAnalysis = {
   facts: string[];
   tags: string[];
   visualTraits: string[];
-  alertSuggested: boolean;
-  alertReason: string | null;
   hudLine1: string;
   hudLine2: string;
   mode: "openai" | "fallback";
 };
 
-const cautionPattern = /強引|しつこ|怖|危険|不快|ハラス|勧誘|避け|苦手|怒鳴|セクハラ|パワハラ/i;
 const visualPattern = /男性|女性|男(?:性|の人)?|女(?:性|の人)?|ジェンダー|年齢|若い|若者|中年|高齢|年配|太(?:い|め)|肥満|ふくよか|ぽっちゃり|大柄|がっしり|筋肉|痩せ|細身|小柄|体格|体型|メガネ|眼鏡|髪|ヘア|服|シャツ|パーカー|ジャケット|帽子|表情|笑顔|雰囲気|印象|声|姿勢|背|ひげ|髭|\b(?:man|male|woman|female|young|middle-aged|older|elderly|fat|plus-size|heavyset|stocky|large|muscular|slim|thin|petite|build|glasses|hair|shirt|hoodie|jacket|hat|beard|tall|short)\b/i;
 const tagCandidates = [
   "AI",
@@ -35,7 +32,6 @@ function compact(value: string, limit: number) {
 }
 
 function fallbackAnalysis(person: ContactProfile, memo: string): MemoryAnalysis {
-  const alertSuggested = cautionPattern.test(memo);
   const tags = tagCandidates.filter((tag) => memo.toLowerCase().includes(tag.toLowerCase()));
   const visualTraits = memo
     .split(/[。！!？?]/)
@@ -48,12 +44,8 @@ function fallbackAnalysis(person: ContactProfile, memo: string): MemoryAnalysis 
     facts: [compact(memo, 42)],
     tags: tags.length ? tags : ["会話メモ"],
     visualTraits,
-    alertSuggested,
-    alertReason: alertSuggested ? topic : null,
-    hudLine1: alertSuggested
-      ? `!! ${shortName}さんが近くにいます`
-      : `${shortName}さん${person.org ? `｜${compact(person.org, 10)}` : ""}`,
-    hudLine2: alertSuggested ? `${topic} → 無理せず離れる` : `${topic} → 続きを聞く`,
+    hudLine1: `${shortName}さん${person.org ? `｜${compact(person.org, 10)}` : ""}`,
+    hudLine2: `${topic} → 続きを聞く`,
     mode: "fallback",
   };
 }
@@ -94,7 +86,7 @@ export async function analyzeMemory(person: ContactProfile, memo: string): Promi
           "自由文メモに明記された事実だけを抽出し、センシティブ属性を推測しないでください。",
           "visualTraitsには、メモに明記された視覚的特徴だけを入れてください。髪型・メガネ・服・表情・雰囲気に加えて、明記された性別表現・年代・体格・体型も必ず含め、意味を弱めたり美化したりせず原文に近い言葉で保持してください。",
           "性別表現・年代・体格・体型・人種など、メモにない特徴は決して推測しないでください。",
-          "注意人物の判定は必ず提案に留め、強引な勧誘・ハラスメント・威圧など明確な記述がある場合だけtrueにしてください。",
+          "人物の危険性、信用性、好ましさ、性格、注意人物かどうかを評価・分類しないでください。",
           "HUD文は日本語で各行24文字程度、合計2行。会話を始めやすい具体的な一言にしてください。",
         ].join("\n"),
         input: `人物: ${person.name} / ${person.org || "所属なし"}\n既存タグ: ${person.tags.join(", ")}\n新しいメモ: ${memo}`,
@@ -110,8 +102,6 @@ export async function analyzeMemory(person: ContactProfile, memo: string): Promi
                 facts: { type: "array", items: { type: "string" }, maxItems: 4 },
                 tags: { type: "array", items: { type: "string" }, maxItems: 5 },
                 visualTraits: { type: "array", items: { type: "string" }, maxItems: 5 },
-                alertSuggested: { type: "boolean" },
-                alertReason: { type: ["string", "null"] },
                 hudLine1: { type: "string" },
                 hudLine2: { type: "string" },
               },
@@ -119,8 +109,6 @@ export async function analyzeMemory(person: ContactProfile, memo: string): Promi
                 "facts",
                 "tags",
                 "visualTraits",
-                "alertSuggested",
-                "alertReason",
                 "hudLine1",
                 "hudLine2",
               ],
@@ -139,8 +127,6 @@ export async function analyzeMemory(person: ContactProfile, memo: string): Promi
       facts: Array.isArray(parsed.facts) ? parsed.facts : [],
       tags: Array.isArray(parsed.tags) ? parsed.tags : [],
       visualTraits: Array.isArray(parsed.visualTraits) ? parsed.visualTraits : [],
-      alertSuggested: Boolean(parsed.alertSuggested),
-      alertReason: parsed.alertReason || null,
       hudLine1: compact(parsed.hudLine1, 30),
       hudLine2: compact(parsed.hudLine2, 30),
       mode: "openai",

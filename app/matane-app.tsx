@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
+import { CURRENT_POLICY_VERSION } from "@/lib/policy";
 import {
   AppLanguage,
   isAppLanguage,
@@ -26,6 +27,8 @@ type MataneUser = {
   avatarDataUrl: string;
   locationEnabled: boolean;
   lastSeen: string | null;
+  consentComplete: boolean;
+  policyVersion: string;
   createdAt: string;
 };
 
@@ -48,8 +51,6 @@ type Contact = {
   portraitDisclaimer: string;
   portraitUpdatedAt: string | null;
   alertLevel: "normal" | "caution";
-  alertSuggested: boolean;
-  alertReason: string | null;
   hudText: string;
   lastSeen: string | null;
   nearby: boolean;
@@ -63,7 +64,8 @@ type Contact = {
 };
 
 type Tab = "exchange" | "nearby" | "friends";
-type SettingsView = "menu" | "email" | "profile" | "logout";
+type SettingsView = "menu" | "email" | "profile" | "privacy" | "logout";
+type ConsentChecks = { terms: boolean; privacy: boolean; image: boolean };
 type Coordinates = { latitude: number; longitude: number; accuracy: number };
 type AccountIdentity = { email: string; displayName: string };
 type PortraitAsset = { dataUrl: string; mode: "openai" | "fallback" };
@@ -77,6 +79,7 @@ type PortraitSet = {
 
 const TOKEN_KEY = "matane_device_token";
 const LANGUAGE_KEY = "hello_again_language";
+const CONSENT_KEY = "hello_again_policy_consent";
 const SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F";
 const SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F";
 const EMAIL_CHANGE_SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F%3Femail_change%3D1";
@@ -215,6 +218,34 @@ async function readJson(response: Response, fallback: string, language: AppLangu
   return body;
 }
 
+function ConsentPanel({
+  checks,
+  setChecks,
+  onAccept,
+  busy,
+  t,
+}: {
+  checks: ConsentChecks;
+  setChecks: (next: ConsentChecks) => void;
+  onAccept: () => void | Promise<void>;
+  busy: boolean;
+  t: Translate;
+}) {
+  const complete = checks.terms && checks.privacy && checks.image;
+  return (
+    <section className="consent-card" aria-labelledby="consent-title">
+      <p className="step-label">POLICY CONSENT</p>
+      <h2 id="consent-title">{t("consent.title")}</h2>
+      <p>{t("consent.intro")}</p>
+      <label><input type="checkbox" checked={checks.terms} onChange={(event) => setChecks({ ...checks, terms: event.target.checked })} /><span>{t("consent.terms")} <Link href="/terms" target="_blank">{t("terms.link")} ↗</Link></span></label>
+      <label><input type="checkbox" checked={checks.privacy} onChange={(event) => setChecks({ ...checks, privacy: event.target.checked })} /><span>{t("consent.privacy")} <Link href="/privacy" target="_blank">{t("privacy.link")} ↗</Link></span></label>
+      <label><input type="checkbox" checked={checks.image} onChange={(event) => setChecks({ ...checks, image: event.target.checked })} /><span>{t("consent.image")}</span></label>
+      <button type="button" className="primary-button" disabled={!complete || busy} onClick={onAccept}>{busy ? t("common.saving") : t("consent.accept")}<span>→</span></button>
+      {!complete && <small>{t("consent.required")}</small>}
+    </section>
+  );
+}
+
 export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [language, setLanguage] = useState<AppLanguage>("ja");
   const [languageReady, setLanguageReady] = useState(false);
@@ -241,6 +272,8 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [settingsView, setSettingsView] = useState<SettingsView>("menu");
   const [avatarDraft, setAvatarDraft] = useState("");
   const [guestMode, setGuestMode] = useState(false);
+  const [localConsentAccepted, setLocalConsentAccepted] = useState(false);
+  const [consentChecks, setConsentChecks] = useState<ConsentChecks>({ terms: false, privacy: false, image: false });
   const [toast, setToast] = useState("");
   const [portraits, setPortraits] = useState<Record<string, PortraitSet>>({});
   const [showPreviousMemos, setShowPreviousMemos] = useState(false);
@@ -274,9 +307,32 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         setLanguagePickerOpen(true);
       }
       setLanguageReady(true);
+      try {
+        const consent = JSON.parse(window.localStorage.getItem(CONSENT_KEY) || "null") as { version?: string } | null;
+        setLocalConsentAccepted(consent?.version === CURRENT_POLICY_VERSION);
+      } catch {
+        window.localStorage.removeItem(CONSENT_KEY);
+      }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  const consentPayload = useCallback(() => ({
+    policyVersion: CURRENT_POLICY_VERSION,
+    termsAccepted: true,
+    privacyAccepted: true,
+    imageConsentAccepted: true,
+  }), []);
+
+  function acceptLocalConsent() {
+    if (!consentChecks.terms || !consentChecks.privacy || !consentChecks.image) {
+      setToast(t("consent.required"));
+      return;
+    }
+    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ version: CURRENT_POLICY_VERSION, acceptedAt: new Date().toISOString() }));
+    setLocalConsentAccepted(true);
+    setToast(t("consent.saved"));
+  }
 
   useEffect(() => {
     document.documentElement.lang = localeFor(language);
@@ -715,6 +771,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
           reading: data.get("reading"),
           org: data.get("org"),
           avatarDataUrl: avatarDraft,
+          consent: consentPayload(),
         }),
       }, "");
       const nextToken = String(body.token);
@@ -743,7 +800,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   async function startReviewerDemo() {
     setBusy(true);
     try {
-      const body = await api("/api/reviewer", { method: "POST" }, "");
+      const body = await api("/api/reviewer", { method: "POST", body: JSON.stringify({ consent: consentPayload() }) }, "");
       const nextToken = String(body.token || "");
       const nextUser = body.user as MataneUser;
       window.localStorage.setItem(TOKEN_KEY, nextToken);
@@ -1065,6 +1122,45 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     window.location.assign(SIGN_OUT_PATH);
   }
 
+  async function acceptPoliciesForExistingUser() {
+    if (!consentChecks.terms || !consentChecks.privacy || !consentChecks.image) {
+      setToast(t("consent.required"));
+      return;
+    }
+    setBusy(true);
+    try {
+      const body = await api("/api/consent", { method: "POST", body: JSON.stringify({ consent: consentPayload() }) });
+      const updated = body.user as MataneUser;
+      window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ version: CURRENT_POLICY_VERSION, acceptedAt: new Date().toISOString() }));
+      setLocalConsentAccepted(true);
+      setUser(updated);
+      setToast(t("consent.saved"));
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : t("error.settingsUpdate"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteAccountAndData() {
+    if (!window.confirm(t("settings.deleteConfirm"))) return;
+    setBusy(true);
+    try {
+      await api("/api/session", { method: "DELETE" });
+      window.localStorage.removeItem(TOKEN_KEY);
+      setToken("");
+      setUser(null);
+      setContacts([]);
+      setMenuOpen(false);
+      setSettingsView("menu");
+      setToast(t("settings.deleteSuccess"));
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : t("error.settingsUpdate"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function returnToTop() {
     setTab("exchange");
     setSelectedId(null);
@@ -1159,10 +1255,13 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
             <p className="lead">{t("onboarding.lead")}</p>
             <div className="privacy-note"><span className="privacy-dot" />{t("onboarding.privacy")}</div>
             <p className="onboarding-consent">
-              {t("terms.consentBefore")}<a href="/terms" target="_blank" rel="noreferrer">{t("terms.link")}</a>{t("terms.consentAfter")}
+              {t("terms.consentBefore")}<a href="/terms" target="_blank" rel="noreferrer">{t("terms.link")}</a> · <a href="/privacy" target="_blank" rel="noreferrer">{t("privacy.link")}</a>{t("terms.consentAfter")}
             </p>
           </section>
-          {!account && !guestMode && (
+          {!localConsentAccepted && (
+            <ConsentPanel checks={consentChecks} setChecks={setConsentChecks} onAccept={acceptLocalConsent} busy={busy} t={t} />
+          )}
+          {localConsentAccepted && !account && !guestMode && (
             <section className="auth-card">
               <p className="step-label">{t("auth.welcome")}</p>
               <h2>{t("auth.emailLogin")}</h2>
@@ -1179,7 +1278,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               <small className="auth-footnote">{t("auth.noPassword")}</small>
             </section>
           )}
-          {(account || guestMode) && (
+          {localConsentAccepted && (account || guestMode) && (
             <form className="onboarding-card" onSubmit={createProfile}>
               <p className="step-label">{t("profile.yours")}</p>
               {account ? (
@@ -1200,6 +1299,29 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               <p className="fine-print">{t("profile.visibility")}</p>
             </form>
           )}
+          <div className="onboarding-language">{languageButton}</div>
+          {toast && <div className="toast" role="status">{toast}</div>}
+        </main>
+        {languagePicker}
+      </>
+    );
+  }
+
+  if (!user.consentComplete) {
+    return (
+      <>
+        <main className="onboarding-shell consent-renewal-shell">
+          <section className="onboarding-copy">
+            <Link className="wordmark" href="/" aria-label="Hello Again home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/hello-again-app-icon.png" alt="" width={44} height={44} />
+              <span>Hello Again</span>
+            </Link>
+            <p className="brand-tagline">{t("brand.tagline")}</p>
+            <h1>{t("consent.title")}</h1>
+            <p className="lead">{t("consent.intro")}</p>
+          </section>
+          <ConsentPanel checks={consentChecks} setChecks={setConsentChecks} onAccept={acceptPoliciesForExistingUser} busy={busy} t={t} />
           <div className="onboarding-language">{languageButton}</div>
           {toast && <div className="toast" role="status">{toast}</div>}
         </main>
@@ -1496,6 +1618,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                 <div className="settings-menu-list">
                   <button type="button" onClick={() => setSettingsView("email")}><span>✉</span><div><strong>{t("settings.email")}</strong><small>{user.accountEmail || t("settings.emailMissing")}</small></div><b>›</b></button>
                   <button type="button" onClick={() => { setAvatarDraft(user.avatarDataUrl); setSettingsView("profile"); }}><span>○</span><div><strong>{t("settings.profile")}</strong><small>{t("settings.profileSummary")}</small></div><b>›</b></button>
+                  <button type="button" onClick={() => setSettingsView("privacy")}><span>⌁</span><div><strong>{t("settings.privacy")}</strong><small>{t("settings.privacySummary")}</small></div><b>›</b></button>
                   <button type="button" onClick={() => setSettingsView("logout")}><span>↪</span><div><strong>{t("settings.logout")}</strong><small>{t("settings.logoutSummary")}</small></div><b>›</b></button>
                 </div>
               </section>
@@ -1535,6 +1658,16 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                 <h2>{t("settings.logout")}</h2>
                 <p>{t("settings.logoutDescription")}</p>
                 <button type="button" className="logout-button" onClick={signOutEverywhere}>{t("settings.signOut")}</button>
+              </section>
+            )}
+
+            {settingsView === "privacy" && (
+              <section className="settings-detail privacy-setting">
+                <div className="settings-detail-heading"><button type="button" onClick={() => setSettingsView("menu")}>‹ {t("common.back")}</button><button type="button" onClick={closeSettings} aria-label={t("common.close")}>×</button></div>
+                <h2>{t("settings.privacy")}</h2>
+                <p>{t("settings.privacyDescription")}</p>
+                <div className="policy-links"><Link href="/terms" target="_blank">{t("terms.link")} ↗</Link><Link href="/privacy" target="_blank">{t("privacy.link")} ↗</Link></div>
+                <button type="button" className="delete-account-button" onClick={deleteAccountAndData} disabled={busy}>{t("settings.deleteAccount")}</button>
               </section>
             )}
           </aside>

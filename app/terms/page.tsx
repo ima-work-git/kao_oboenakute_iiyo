@@ -2,15 +2,33 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "利用規約 | Hello Again",
-  description: "Hello Againの利用規約です。",
+  title: "Terms of Use | Hello Again",
+  description: "Terms of Use for the Hello Again experimental prototype.",
 };
+
+const englishSections = [
+  { title: "1. Scope and explicit consent", paragraphs: ["These Terms govern use of Hello Again, an experimental hackathon prototype operated by its individual creator. Before using the service, you must actively confirm the Terms, Privacy Policy, and AI image consent. If you do not agree, do not use the service."] },
+  { title: "2. Experimental service", paragraphs: ["The service may change, be restricted, lose data, or end at any time. It is not for emergency contact, identity verification, medical, employment, credit, safety, or other high-impact decisions."] },
+  { title: "3. Accounts and submitted information", paragraphs: ["You must provide lawful, accurate information and protect your device, email, session, and exchange code. You are responsible for information submitted through your account."] },
+  { title: "4. Other people’s data", paragraphs: ["Enter another person’s profile, notes, location-related information, or appearance only when you have lawful authority or permission to record and process it. Do not enter sensitive, secret, unlawfully obtained, or rights-infringing information."] },
+  { title: "5. Location", paragraphs: ["Location is collected only when you invoke a relevant action and allow browser access. It is a one-time snapshot, not continuous tracking. Nearby results can be inaccurate or delayed, and must not be treated as a safety or identity signal."] },
+  { title: "6. AI-generated output", paragraphs: ["OpenAI models may structure explicit notes and generate photorealistic fictional memory images from written descriptions. No real photograph is used as the generation input. Output may be inaccurate, biased, inappropriate, or resemble someone by coincidence; it does not identify or reconstruct the person.", "AI does not classify whether a person is dangerous, trustworthy, desirable, or a caution person. Any private caution flag is solely the user’s manual choice. Never use output for identification, publication, surveillance, harassment, discrimination, or decisions that affect a person."] },
+  { title: "7. User content license", paragraphs: ["You retain rights you lawfully hold. You grant the operator a non-exclusive, royalty-free license to store, display, transform, transmit to disclosed processors, troubleshoot, and otherwise use content only as needed to provide and secure the service."] },
+  { title: "8. Prohibited conduct", paragraphs: ["No unlawful acts, impersonation, stalking, harassment, surveillance, discrimination, threats, non-consensual personal-data collection or publication, rights infringement, unauthorized access, security abuse, excessive load, resale, or interference with the service."] },
+  { title: "9. User interactions", paragraphs: ["Exchanges, reunions, conversations, notes, and location sharing are between users at their own judgment and risk. The operator does not verify identity, intent, trustworthiness, safety, current location, or submitted information, and is not a mediator between users."] },
+  { title: "10. Changes, suspension, and termination", paragraphs: ["The operator may modify, restrict, suspend, or end all or part of the service for maintenance, security, third-party outages, legal compliance, technical limits, or operational reasons. Data may become unavailable or be deleted; keep your own copies of anything important."] },
+  { title: "11. Deletion and enforcement", paragraphs: ["You may delete your account and data from Settings. The operator may restrict use or delete content for violations, security, protection of others, or other reasonable causes. Data is not guaranteed to be retained, restored, or exported."] },
+  { title: "12. Disclaimer", paragraphs: ["The service is provided “as is” and “as available,” without warranties of accuracy, completeness, usefulness, legality, safety, availability, continuity, fitness, compatibility, security, data preservation, nearby results, or AI output."] },
+  { title: "13. Limitation of liability", paragraphs: ["To the extent permitted by law, the operator is not liable for indirect, special, incidental, consequential, lost-profit, or data-loss damages. For ordinary negligence, aggregate liability is capped at the greater of JPY 10,000 or fees paid by that user during the preceding 12 months. These limits do not apply where prohibited by law or to intentional misconduct or gross negligence."] },
+  { title: "14. Changes to these Terms", paragraphs: ["Reasonable changes may be announced in the service. Material updates may require renewed explicit consent before further use."] },
+  { title: "15. Governing law and venue", paragraphs: ["Japanese law governs. Tokyo District Court or Tokyo Summary Court has exclusive agreed jurisdiction in the first instance."] },
+] as const;
 
 const sections = [
   {
     title: "第1条（適用・同意）",
     paragraphs: [
-      "本利用規約（以下「本規約」）は、Hello Again（以下「本サービス」）の利用条件を定めるものです。本サービスへの登録、ログイン、審査デモの開始、ゲスト利用その他の主要機能を利用した時点で、利用者は本規約の全てに同意したものとみなされます。",
+      "本利用規約（以下「本規約」）は、Hello Again（以下「本サービス」）の利用条件を定めるものです。利用者は、利用開始前に利用規約、プライバシーポリシーおよびAI画像生成について画面上で明示的に同意する必要があります。",
       "本規約に同意できない場合は、本サービスを利用しないでください。",
     ],
   },
@@ -33,7 +51,7 @@ const sections = [
     paragraphs: [
       "本サービスは、プロフィール、アイコン、名前の読み方、所属、交換履歴、メモ、位置情報その他の情報を、機能提供に必要な範囲で取り扱います。利用者は、登録する情報の内容及び共有のタイミングを自ら判断するものとします。",
       "位置情報は、利用者が該当する操作を行い、端末で許可した場合にのみ取得されます。位置情報、距離及び近接判定には、端末、通信、建物その他の事情による誤差や遅延が生じることがあります。",
-      "利用者は、第三者の機密情報、要配慮情報又は本人の同意なく取得した情報を登録してはなりません。",
+      "利用者は、第三者の情報を記録・処理する正当な権限または許可がある場合だけ登録できます。機密情報、要配慮情報、違法に取得した情報を登録してはなりません。",
     ],
   },
   {
@@ -46,8 +64,8 @@ const sections = [
   {
     title: "第6条（AI生成機能）",
     paragraphs: [
-      "AIが整理又は生成する文章、特徴、画像その他の出力は、推測を含み、不正確、不適切又は期待と異なる場合があります。生成画像は実在する本人を再現又は特定するものではありません。",
-      "利用者は、AI出力を本人確認、人物評価、差別的判断、公開、転載その他の第三者に影響する用途に使用せず、利用前に自ら内容を確認するものとします。AI出力の利用結果は利用者が責任を負います。",
+      "AIが整理又は生成する文章、特徴、実写風画像その他の出力は、推測を含み、不正確、不適切又は期待と異なる場合があります。生成画像は文章メモから作る架空の記憶画像であり、実在写真を生成入力に使わず、本人を再現・特定するものではありません。偶然似る可能性はあります。",
+      "AIは危険性、信用性、好ましさ、注意人物かどうかを分類しません。注意フラグは利用者が自ら設定する非公開情報です。AI出力を本人確認、人物評価、差別的判断、公開、転載その他の第三者に影響する用途に使用してはなりません。",
     ],
   },
   {
@@ -130,14 +148,22 @@ export default function TermsPage() {
         <div className="terms-title">
           <p>TERMS OF USE</p>
           <h1>利用規約</h1>
-          <span>制定日：2026年7月20日</span>
+          <span>Effective July 21, 2026 · 改定日：2026年7月21日</span>
         </div>
 
         <aside className="terms-summary">
-          <strong>重要事項</strong>
-          <p>Hello Againは実験的なプロトタイプです。予告なく変更・中断・終了し、保存データが利用できなくなる場合があります。重要な情報はご自身でも保管してください。</p>
-          <small>The Japanese text is the authoritative version of these Terms of Use.</small>
+          <strong>Important / 重要事項</strong>
+          <p>Hello Again is an experimental prototype. It may change or end and stored data may become unavailable. Keep your own copy of anything important.</p>
+          <p>Hello Againは実験的なプロトタイプです。変更・終了し、保存データが利用できなくなる場合があります。重要な情報はご自身でも保管してください。</p>
+          <small>English and Japanese are provided together. 日本語と英語を併記しています。</small>
         </aside>
+
+        <h2 lang="en">English</h2>
+        {englishSections.map((section) => (
+          <section key={section.title} lang="en"><h2>{section.title}</h2>{section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</section>
+        ))}
+
+        <h2 lang="ja">日本語</h2>
 
         {sections.map((section) => (
           <section key={section.title}>
@@ -147,7 +173,8 @@ export default function TermsPage() {
         ))}
 
         <footer className="terms-footer">
-          <p>Hello Again 運営者</p>
+          <p>Hello Again · Individual prototype by Fumiya</p>
+          <Link href="/privacy">Privacy / プライバシー</Link>
           <Link href="/">Hello Againを開く</Link>
         </footer>
       </article>
