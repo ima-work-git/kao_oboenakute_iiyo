@@ -1187,7 +1187,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseAvatar(event.target.files?.[0])} />
               </label>
               <label>{t("profile.name")}<input name="name" required placeholder="Alex Kim" defaultValue={account && !account.displayName.includes("@") ? account.displayName : ""} autoComplete="name" /></label>
-              <label>{t("profile.reading")} <small>{t("common.optional")}</small><input name="reading" placeholder="Alex Kim" /></label>
+              <label>{t("profile.reading")} <small>{t("common.optional")}</small><input name="reading" placeholder={t("profile.readingPlaceholder")} /></label>
               <label>{t("profile.organization")}<input name="org" placeholder="OpenAI Build Week" autoComplete="organization" /></label>
               <button className="primary-button" disabled={busy}>{busy ? t("profile.creating") : t("profile.create")}<span>→</span></button>
               <p className="fine-print">{t("profile.visibility")}</p>
@@ -1515,7 +1515,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                 <label className="avatar-upload"><PersonAvatar name={user.name} src={avatarDraft} className="avatar-preview" /><span><strong>{t("profile.photo")}</strong><small>{t("common.optional")}</small></span><b>{t("profile.change")}</b><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseAvatar(event.target.files?.[0])} /></label>
                 {avatarDraft && <button type="button" className="remove-avatar" onClick={() => setAvatarDraft("")}>{t("profile.removePhoto")}</button>}
                 <label>{t("profile.name")}<input name="name" required defaultValue={user.name} autoComplete="name" /></label>
-                <label>{t("profile.reading")} <small>{t("common.optional")}</small><input name="reading" defaultValue={user.reading} /></label>
+                <label>{t("profile.reading")} <small>{t("common.optional")}</small><input name="reading" defaultValue={user.reading} placeholder={t("profile.readingPlaceholder")} /></label>
                 <label>{t("profile.organization")}<input name="org" defaultValue={user.org} autoComplete="organization" /></label>
                 <button className="primary-button" disabled={busy}>{busy ? t("common.saving") : t("settings.saveChanges")}<span>→</span></button>
               </form>

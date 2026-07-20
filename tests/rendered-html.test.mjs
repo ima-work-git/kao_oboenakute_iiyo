@@ -21,6 +21,8 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, />Hello Again</);
   assert.match(i18n, /Never worry about remembering faces/);
   assert.match(i18n, /"onboarding\.headline": "名前を思い出せなくても、また話せる。"/);
+  assert.match(i18n, /位置情報は、あなたが操作した時だけ登録します。自動追跡や、知らないうちの共有はしません。/);
+  assert.doesNotMatch(i18n, /顔認証なし。座標は相手に見せません。/);
   assert.doesNotMatch(i18n, /"onboarding\.headline": [^\n]*\\n/);
   assert.doesNotMatch(app, /onboarding\.headline"\)\.split/);
   assert.match(i18n, /日本語/);
@@ -46,6 +48,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /preferredAppLanguage\(browserLanguages\)/);
   assert.match(i18n, /return "en"/);
   assert.match(app, /LANGUAGE_OPTIONS\.map/);
+  assert.equal((app.match(/placeholder=\{t\("profile\.readingPlaceholder"\)\}/g) ?? []).length, 2);
   assert.match(app, /言語を選択 \/ Choose your language/);
   assert.match(app, /Choose your language for Hello Again/);
   assert.match(app, /returnToTop\(\)/);
@@ -57,6 +60,8 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(css, /\.language-picker/);
   assert.match(css, /\.language-options[^\n]+overflow-y: auto/);
   assert.match(css, /\.onboarding-copy h1[^\n]+text-wrap: balance/);
+  assert.match(css, /\.brand-tagline[\s\S]*margin: 10px 0 28px/);
+  assert.doesNotMatch(css, /\.brand-tagline[^}]*margin-(?:top|bottom):\s*-/);
   assert.match(css, /\.onboarding-language[\s\S]*width: min\(calc\(100% - 32px\), 1070px\)/);
   assert.match(app, /visibilitychange/);
   assert.match(ui, /メモから作るイメージ/);

@@ -80,7 +80,7 @@ button:disabled { cursor: wait; opacity: 0.55; }
 .onboarding-copy, .onboarding-card, .auth-card { width: min(100%, 520px); margin-inline: auto; position: relative; z-index: 1; }
 .eyebrow { display: flex; align-items: center; gap: 10px; color: #90a099; font: 700 10px/1 system-ui; letter-spacing: .18em; text-transform: uppercase; }
 .eyebrow span { width: 22px; height: 1px; background: var(--mint); }
-.wordmark { width: fit-content; margin: 20px 0 48px; display: inline-flex; align-items: center; gap: 11px; color: inherit; font: 650 20px/1 system-ui; letter-spacing: .05em; text-decoration: none; }
+.wordmark { width: fit-content; margin: 20px 0 48px; display: flex; align-items: center; gap: 11px; color: inherit; font: 650 20px/1 system-ui; letter-spacing: .05em; text-decoration: none; }
 .wordmark img { width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 7px 18px rgba(0, 0, 0, .14); }
 .wordmark small { color: var(--mint); font: 600 10px/1 system-ui; letter-spacing: .18em; margin-left: 5px; }
 .onboarding-copy h1 { margin: 0; font-size: clamp(34px, 10vw, 56px); line-height: 1.18; letter-spacing: -.055em; font-weight: 700; }
@@ -1118,8 +1118,9 @@ body {
 }
 
 /* Hello Again language controls */
+.wordmark { margin-bottom: 0; }
 .brand-tagline {
-  margin: -20px 0 28px;
+  margin: 10px 0 28px;
   color: #59645e;
   font-size: 13px;
   font-weight: 650;
@@ -1228,5 +1229,5 @@ body {
 }
 
 @media (min-width: 760px) {
-  .brand-tagline { margin-top: -58px; margin-bottom: 52px; }
+  .brand-tagline { margin: 10px 0 42px; }
 }
