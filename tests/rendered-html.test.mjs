@@ -16,7 +16,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(layout, /lang="ja"/i);
   assert.match(layout, /Hello Again — Never worry about remembering faces/);
   assert.match(layout, /og-hello-again\.png/);
-  assert.match(layout, /matane-app-icon\.svg/);
+  assert.match(layout, /hello-again-app-icon\.png/);
   assert.match(layout, /apple-icon\.png/);
   assert.match(app, />Hello Again</);
   assert.match(i18n, /Never worry about remembering faces/);
@@ -28,11 +28,14 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /LANGUAGE_KEY = "hello_again_language"/);
   assert.match(app, /localStorage\.setItem\(LANGUAGE_KEY/);
   assert.match(app, /LANGUAGE_OPTIONS\.map/);
+  assert.match(app, /言語を選択 \/ Choose your language/);
+  assert.match(app, /Choose your language for Hello Again/);
+  assert.match(app, /returnToTop\(\)/);
+  assert.match(app, /className="app-brand-link"/);
   assert.match(app, /setLanguagePickerOpen\(true\)/);
   assert.match(app, /document\.documentElement\.lang/);
   assert.match(css, /\.language-button/);
   assert.match(css, /\.language-picker/);
-  assert.doesNotMatch(app, />MATANE/);
   assert.match(app, /visibilitychange/);
   assert.match(ui, /メモから作るイメージ/);
   assert.match(app, /WAITING_MESSAGE_KEYS/);
@@ -96,7 +99,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.doesNotMatch(`${layout}\n${app}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
   await access(new URL("app/icon.png", root));
   await access(new URL("app/apple-icon.png", root));
-  await access(new URL("public/matane-app-icon.svg", root));
+  await access(new URL("public/hello-again-app-icon.png", root));
   await access(new URL("public/og-hello-again.png", root));
   await access(new URL("dist/server/index.js", root));
 });

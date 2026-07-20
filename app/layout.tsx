@@ -17,8 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     icons: {
       icon: [
-        { url: "/icon.png", type: "image/png", sizes: "1024x1024" },
-        { url: "/matane-app-icon.svg", type: "image/svg+xml" },
+        { url: "/hello-again-app-icon.png", type: "image/png", sizes: "1024x1024" },
       ],
       apple: { url: "/apple-icon.png", type: "image/png", sizes: "180x180" },
     },

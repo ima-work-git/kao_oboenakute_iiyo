@@ -90,7 +90,7 @@ export async function analyzeMemory(person: ContactProfile, memo: string): Promi
         store: false,
         max_output_tokens: 300,
         instructions: [
-          "あなたは、再会時に人の名前と会話を思い出す支援アプリMATANEの記憶整理担当です。",
+          "あなたは、再会時に人の名前と会話を思い出す支援アプリHello Againの記憶整理担当です。",
           "自由文メモに明記された事実だけを抽出し、センシティブ属性を推測しないでください。",
           "visualTraitsには、メモに明記された視覚的特徴だけを入れてください。髪型・メガネ・服・表情・雰囲気に加えて、明記された性別表現・年代・体格・体型も必ず含め、意味を弱めたり美化したりせず原文に近い言葉で保持してください。",
           "性別表現・年代・体格・体型・人種など、メモにない特徴は決して推測しないでください。",

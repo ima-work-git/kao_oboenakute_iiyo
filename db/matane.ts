@@ -342,7 +342,7 @@ const REVIEWER_PERSONAS: ReviewerPersona[] = [
 
 function getBinding(): D1Database {
   const binding = (env as unknown as { DB?: D1Database }).DB;
-  if (!binding) throw new Error("MATANEのデータベースに接続できませんでした。");
+  if (!binding) throw new Error("Hello Againのデータベースに接続できませんでした。");
   return binding;
 }
 

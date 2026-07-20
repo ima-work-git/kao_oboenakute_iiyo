@@ -1059,6 +1059,15 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     window.location.assign(SIGN_OUT_PATH);
   }
 
+  function returnToTop() {
+    setTab("exchange");
+    setSelectedId(null);
+    setMenuOpen(false);
+    setSettingsView("menu");
+    window.history.replaceState({}, "", window.location.pathname);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   const currentLanguage = LANGUAGE_OPTIONS.find((option) => option.code === language) ?? LANGUAGE_OPTIONS[0];
   const languageButton = (
     <button
@@ -1081,10 +1090,20 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     >
       <section className="language-picker" onClick={(event) => event.stopPropagation()}>
         <div className="language-picker-heading">
-          <div><span>LANGUAGE</span><h2 id="language-title">{t("language.title")}</h2></div>
+          <div>
+            <span>{hasLanguagePreference ? "LANGUAGE" : "LANGUAGE / 言語"}</span>
+            <h2 id="language-title">{hasLanguagePreference ? t("language.title") : "言語を選択 / Choose your language"}</h2>
+          </div>
           {hasLanguagePreference && <button type="button" onClick={() => setLanguagePickerOpen(false)} aria-label={t("language.close")}>×</button>}
         </div>
-        <p>{t("language.intro")}</p>
+        {hasLanguagePreference ? (
+          <p>{t("language.intro")}</p>
+        ) : (
+          <p className="language-first-intro">
+            <span lang="ja">Hello Againで使う言語を選んでください。あとから右上のLANGで変更できます。</span>
+            <span lang="en">Choose your language for Hello Again. You can change it later from LANG in the top right.</span>
+          </p>
+        )}
         <div className="language-options">
           {LANGUAGE_OPTIONS.map((option) => (
             <button
@@ -1106,7 +1125,9 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     return (
       <>
         <main className="loading-screen" aria-live="polite">
-          <div className="brand-mark">?</div>
+          <a className="brand-mark" href="/" aria-label="Hello Again home">
+            <Image src="/hello-again-app-icon.png" alt="" width={72} height={72} priority />
+          </a>
           <p>{t("loading")}</p>
           {languageButton}
         </main>
@@ -1120,7 +1141,10 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       <>
         <main className="onboarding-shell">
           <section className="onboarding-copy">
-            <p className="wordmark">Hello Again</p>
+            <a className="wordmark" href="/" aria-label="Hello Again home">
+              <Image src="/hello-again-app-icon.png" alt="" width={44} height={44} priority />
+              <span>Hello Again</span>
+            </a>
             <p className="brand-tagline">{t("brand.tagline")}</p>
             <h1>{t("onboarding.headline").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}</h1>
             <p className="lead">{t("onboarding.lead")}</p>
@@ -1176,8 +1200,11 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     <>
     <main className="app-shell">
       <header className="app-header">
-        <div>
-          <p className="app-wordmark">Hello Again</p>
+        <div className="app-brand-area">
+          <a className="app-brand-link" href="/" onClick={(event) => { event.preventDefault(); returnToTop(); }} aria-label={`${t("nav.exchange")} — Hello Again`}>
+            <Image src="/hello-again-app-icon.png" alt="" width={38} height={38} priority />
+            <span className="app-wordmark">Hello Again</span>
+          </a>
           <p className="header-caption">{t("header.user", { name: user.name })}</p>
         </div>
         <div className="header-actions">
