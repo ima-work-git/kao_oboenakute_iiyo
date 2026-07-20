@@ -1126,7 +1126,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       <>
         <main className="loading-screen" aria-live="polite">
           <a className="brand-mark" href="/" aria-label="Hello Again home">
-            <Image src="/hello-again-app-icon.png" alt="" width={72} height={72} unoptimized priority />
+            <img src="/hello-again-app-icon.png" alt="" width={72} height={72} />
           </a>
           <p>{t("loading")}</p>
           {languageButton}
@@ -1142,7 +1142,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         <main className="onboarding-shell">
           <section className="onboarding-copy">
             <a className="wordmark" href="/" aria-label="Hello Again home">
-              <Image src="/hello-again-app-icon.png" alt="" width={44} height={44} unoptimized priority />
+              <img src="/hello-again-app-icon.png" alt="" width={44} height={44} />
               <span>Hello Again</span>
             </a>
             <p className="brand-tagline">{t("brand.tagline")}</p>
@@ -1202,7 +1202,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       <header className="app-header">
         <div className="app-brand-area">
           <a className="app-brand-link" href="/" onClick={(event) => { event.preventDefault(); returnToTop(); }} aria-label={`${t("nav.exchange")} — Hello Again`}>
-            <Image src="/hello-again-app-icon.png" alt="" width={38} height={38} unoptimized priority />
+            <img src="/hello-again-app-icon.png" alt="" width={38} height={38} />
             <span className="app-wordmark">Hello Again</span>
           </a>
           <p className="header-caption">{t("header.user", { name: user.name })}</p>

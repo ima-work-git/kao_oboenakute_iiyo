@@ -32,7 +32,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /Choose your language for Hello Again/);
   assert.match(app, /returnToTop\(\)/);
   assert.match(app, /className="app-brand-link"/);
-  assert.equal((app.match(/hello-again-app-icon\.png" alt=""[^>]+unoptimized/g) ?? []).length, 3);
+  assert.equal((app.match(/<img src="\/hello-again-app-icon\.png"/g) ?? []).length, 3);
   assert.match(app, /setLanguagePickerOpen\(true\)/);
   assert.match(app, /document\.documentElement\.lang/);
   assert.match(css, /\.language-button/);
