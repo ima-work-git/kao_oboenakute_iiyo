@@ -28,8 +28,23 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(i18n, /简体中文/);
   assert.match(i18n, /한국어/);
   assert.match(i18n, /Español/);
+  assert.match(i18n, /Français/);
+  assert.match(i18n, /Deutsch/);
+  assert.match(i18n, /Português/);
+  const languageNames = ["ja", "en", "zh", "ko", "es", "fr", "de", "pt"];
+  const translatedKeySets = languageNames.map((name, index) => {
+    const start = i18n.indexOf(`const ${name}`);
+    const end = index + 1 < languageNames.length
+      ? i18n.indexOf(`const ${languageNames[index + 1]}`, start)
+      : i18n.indexOf("const TRANSLATIONS", start);
+    return new Set([...i18n.slice(start, end).matchAll(/"([a-zA-Z][^"]*)":/g)].map((match) => match[1]));
+  });
+  for (const keys of translatedKeySets) assert.deepEqual(keys, translatedKeySets[0]);
   assert.match(app, /LANGUAGE_KEY = "hello_again_language"/);
   assert.match(app, /localStorage\.setItem\(LANGUAGE_KEY/);
+  assert.match(app, /navigator\.languages/);
+  assert.match(app, /preferredAppLanguage\(browserLanguages\)/);
+  assert.match(i18n, /return "en"/);
   assert.match(app, /LANGUAGE_OPTIONS\.map/);
   assert.match(app, /言語を選択 \/ Choose your language/);
   assert.match(app, /Choose your language for Hello Again/);
@@ -40,6 +55,7 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /document\.documentElement\.lang/);
   assert.match(css, /\.language-button/);
   assert.match(css, /\.language-picker/);
+  assert.match(css, /\.language-options[^\n]+overflow-y: auto/);
   assert.match(css, /\.onboarding-copy h1[^\n]+text-wrap: balance/);
   assert.match(css, /\.onboarding-language[\s\S]*width: min\(calc\(100% - 32px\), 1070px\)/);
   assert.match(app, /visibilitychange/);

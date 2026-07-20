@@ -9,6 +9,7 @@ import {
   isAppLanguage,
   LANGUAGE_OPTIONS,
   localeFor,
+  preferredAppLanguage,
   translate,
   Translate,
   WAITING_MESSAGE_KEYS,
@@ -265,6 +266,10 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         setLanguage(stored);
         setHasLanguagePreference(true);
       } else {
+        const browserLanguages = window.navigator.languages?.length
+          ? window.navigator.languages
+          : [window.navigator.language];
+        setLanguage(preferredAppLanguage(browserLanguages));
         setLanguagePickerOpen(true);
       }
       setLanguageReady(true);
@@ -273,7 +278,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = language === "zh" ? "zh-CN" : language;
+    document.documentElement.lang = localeFor(language);
   }, [language]);
 
   function chooseLanguage(nextLanguage: AppLanguage) {
@@ -1109,11 +1114,11 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
             <button
               type="button"
               key={option.code}
-              className={language === option.code && hasLanguagePreference ? "is-selected" : ""}
+              className={language === option.code ? "is-selected" : ""}
               onClick={() => chooseLanguage(option.code)}
               lang={option.code === "zh" ? "zh-CN" : option.code}
             >
-              <span>{option.shortLabel}</span><strong>{option.label}</strong>{language === option.code && hasLanguagePreference && <b>✓</b>}
+              <span>{option.shortLabel}</span><strong>{option.label}</strong>{language === option.code && <b>✓</b>}
             </button>
           ))}
         </div>

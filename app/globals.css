@@ -1170,10 +1170,14 @@ body {
 }
 .language-picker {
   width: min(100%, 430px);
+  max-height: calc(100svh - max(36px, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
   border: 1px solid #d8dcd7;
   border-radius: 20px;
   background: #fbfaf6;
   padding: 22px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
   box-shadow: 0 24px 70px rgba(20, 27, 23, .25);
 }
 .language-picker-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
@@ -1190,7 +1194,7 @@ body {
 }
 .language-picker > p { margin: 12px 0 18px; color: #69736d; font-size: 12px; line-height: 1.65; }
 .language-picker > .language-first-intro { display: grid; gap: 5px; }
-.language-options { display: grid; gap: 8px; }
+.language-options { min-height: 0; display: grid; gap: 8px; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
 .language-options button {
   width: 100%;
   min-height: 54px;
