@@ -21,6 +21,7 @@ export type MataneUser = {
 export type ContactProfile = {
   contactUserId: string;
   name: string;
+  nickname: string;
   reading: string;
   org: string;
   avatarDataUrl: string;
@@ -30,6 +31,8 @@ export type ContactProfile = {
   visualTraits: string[];
   portraitFaceAvailable: boolean;
   portraitFullBodyAvailable: boolean;
+  portraitPreviousAvailable: boolean;
+  portraitPreviousUpdatedAt: string | null;
   portraitMode: "openai" | "fallback" | null;
   portraitDisclaimer: string;
   portraitUpdatedAt: string | null;
@@ -40,6 +43,10 @@ export type ContactProfile = {
   lastSeen: string | null;
   nearby: boolean;
   distanceMeters: number | null;
+  exchangedAt: string;
+  exchangePlaceLabel: string;
+  exchangeLatitude: number | null;
+  exchangeLongitude: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -74,12 +81,21 @@ type ContactRow = {
   contact_location_accuracy: number | null;
   contact_location_enabled: number;
   contact_last_seen: string | null;
+  nickname: string;
+  exchanged_at: string;
+  exchange_latitude: number | null;
+  exchange_longitude: number | null;
+  exchange_accuracy: number | null;
   tags: string;
   memos: string;
   facts: string;
   visual_traits: string;
   portrait_key: string;
   portrait_full_body_key: string;
+  portrait_previous_key: string;
+  portrait_previous_full_body_key: string;
+  portrait_previous_mode: string;
+  portrait_previous_updated_at: string | null;
   portrait_mode: string;
   portrait_disclaimer: string;
   portrait_updated_at: string | null;
@@ -392,6 +408,7 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
   return {
     contactUserId: row.contact_user_id,
     name: row.contact_name,
+    nickname: row.nickname,
     reading: row.contact_reading,
     org: row.contact_org,
     avatarDataUrl: row.contact_avatar_data_url,
@@ -401,6 +418,8 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
     visualTraits: parseArray<string>(row.visual_traits),
     portraitFaceAvailable: Boolean(row.portrait_key),
     portraitFullBodyAvailable: Boolean(row.portrait_full_body_key),
+    portraitPreviousAvailable: Boolean(row.portrait_previous_key && row.portrait_previous_full_body_key),
+    portraitPreviousUpdatedAt: row.portrait_previous_updated_at,
     portraitMode: row.portrait_mode === "openai" || row.portrait_mode === "fallback" ? row.portrait_mode : null,
     portraitDisclaimer: row.portrait_disclaimer,
     portraitUpdatedAt: row.portrait_updated_at,
@@ -411,9 +430,21 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
     lastSeen: row.contact_last_seen,
     nearby: distance != null && distance <= NEARBY_RADIUS_METERS,
     distanceMeters: distance == null ? null : Math.round(distance),
+    exchangedAt: row.exchanged_at || row.created_at,
+    exchangePlaceLabel: exchangePlaceLabel(row.exchange_latitude, row.exchange_longitude),
+    exchangeLatitude: row.exchange_latitude,
+    exchangeLongitude: row.exchange_longitude,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function exchangePlaceLabel(latitude: number | null, longitude: number | null) {
+  if (latitude == null || longitude == null) return "場所は記録されていません";
+  if (distanceMeters(latitude, longitude, REVIEWER_VENUE.latitude, REVIEWER_VENUE.longitude) <= 250) {
+    return `${REVIEWER_VENUE.name}付近`;
+  }
+  return `緯度${latitude.toFixed(3)}・経度${longitude.toFixed(3)}付近`;
 }
 
 function randomCode() {
@@ -486,12 +517,21 @@ export async function ensureMataneDb() {
       id TEXT PRIMARY KEY,
       owner_id TEXT NOT NULL,
       contact_user_id TEXT NOT NULL,
+      nickname TEXT NOT NULL DEFAULT '',
+      exchanged_at TEXT NOT NULL DEFAULT '',
+      exchange_latitude REAL,
+      exchange_longitude REAL,
+      exchange_accuracy REAL,
       tags TEXT NOT NULL DEFAULT '[]',
       memos TEXT NOT NULL DEFAULT '[]',
       facts TEXT NOT NULL DEFAULT '[]',
       visual_traits TEXT NOT NULL DEFAULT '[]',
       portrait_key TEXT NOT NULL DEFAULT '',
       portrait_full_body_key TEXT NOT NULL DEFAULT '',
+      portrait_previous_key TEXT NOT NULL DEFAULT '',
+      portrait_previous_full_body_key TEXT NOT NULL DEFAULT '',
+      portrait_previous_mode TEXT NOT NULL DEFAULT '',
+      portrait_previous_updated_at TEXT,
       portrait_mode TEXT NOT NULL DEFAULT '',
       portrait_disclaimer TEXT NOT NULL DEFAULT '',
       portrait_updated_at TEXT,
@@ -515,6 +555,21 @@ export async function ensureMataneDb() {
   }
   await db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email)").run();
   const contactColumns = await db.prepare("PRAGMA table_info(contacts)").all<{ name: string }>();
+  if (!(contactColumns.results ?? []).some((column) => column.name === "nickname")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN nickname TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "exchanged_at")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN exchanged_at TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "exchange_latitude")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN exchange_latitude REAL").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "exchange_longitude")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN exchange_longitude REAL").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "exchange_accuracy")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN exchange_accuracy REAL").run();
+  }
   if (!(contactColumns.results ?? []).some((column) => column.name === "visual_traits")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN visual_traits TEXT NOT NULL DEFAULT '[]'").run();
   }
@@ -523,6 +578,18 @@ export async function ensureMataneDb() {
   }
   if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_full_body_key")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_full_body_key TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_previous_key")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_previous_key TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_previous_full_body_key")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_previous_full_body_key TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_previous_mode")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_previous_mode TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_previous_updated_at")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_previous_updated_at TEXT").run();
   }
   if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_mode")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_mode TEXT NOT NULL DEFAULT ''").run();
@@ -638,13 +705,18 @@ export async function createReviewerDemoSession() {
         .prepare(
           `INSERT INTO contacts (
             id, owner_id, contact_user_id, tags, memos, facts, visual_traits,
+            exchanged_at, exchange_latitude, exchange_longitude, exchange_accuracy,
             alert_level, alert_suggested, alert_reason, hud_text, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'normal', 0, NULL, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20, 'normal', 0, NULL, ?, ?, ?)
           ON CONFLICT(owner_id, contact_user_id) DO UPDATE SET
             tags = excluded.tags,
             memos = excluded.memos,
             facts = excluded.facts,
             visual_traits = excluded.visual_traits,
+            exchanged_at = excluded.exchanged_at,
+            exchange_latitude = excluded.exchange_latitude,
+            exchange_longitude = excluded.exchange_longitude,
+            exchange_accuracy = excluded.exchange_accuracy,
             alert_level = excluded.alert_level,
             alert_suggested = excluded.alert_suggested,
             alert_reason = excluded.alert_reason,
@@ -659,6 +731,9 @@ export async function createReviewerDemoSession() {
           JSON.stringify([{ date: "2026-07-18", text: persona.memo }]),
           JSON.stringify([persona.memo]),
           JSON.stringify(persona.visualTraits),
+          "2026-07-18T04:30:00.000Z",
+          REVIEWER_VENUE.latitude,
+          REVIEWER_VENUE.longitude,
           `${persona.name}さん｜${persona.org}\n${persona.tags[0]}の話を続ける`,
           now,
           updatedAt
@@ -745,8 +820,13 @@ async function contactRows(ownerId: string) {
   const result = await db
     .prepare(
       `SELECT
-        c.owner_id, c.contact_user_id, c.tags, c.memos, c.facts, c.visual_traits,
-        c.portrait_key, c.portrait_full_body_key, c.portrait_mode, c.portrait_disclaimer, c.portrait_updated_at,
+        c.owner_id, c.contact_user_id, c.nickname, c.exchanged_at,
+        c.exchange_latitude, c.exchange_longitude, c.exchange_accuracy,
+        c.tags, c.memos, c.facts, c.visual_traits,
+        c.portrait_key, c.portrait_full_body_key,
+        c.portrait_previous_key, c.portrait_previous_full_body_key,
+        c.portrait_previous_mode, c.portrait_previous_updated_at,
+        c.portrait_mode, c.portrait_disclaimer, c.portrait_updated_at,
         c.alert_level, c.alert_suggested, c.alert_reason, c.hud_text,
         c.created_at, c.updated_at,
         u.name AS contact_name, u.reading AS contact_reading,
@@ -780,21 +860,35 @@ export async function sessionSnapshot(userRow: UserRow) {
   return { user: toUser(userRow), contacts };
 }
 
-async function addContactPair(db: D1Database, owner: UserRow, target: UserRow) {
+type ExchangePosition = { latitude: number; longitude: number; accuracy: number | null } | null;
+
+async function addContactPair(db: D1Database, owner: UserRow, target: UserRow, position: ExchangePosition) {
   const now = new Date().toISOString();
   const hudText = `${target.name}さん${target.org ? `｜${target.org}` : ""}\n前回の続きを話す`;
   await db
     .prepare(
       `INSERT OR IGNORE INTO contacts (
-        id, owner_id, contact_user_id, tags, memos, facts,
+        id, owner_id, contact_user_id, exchanged_at, exchange_latitude, exchange_longitude, exchange_accuracy,
+        tags, memos, facts,
         alert_level, alert_suggested, hud_text, created_at, updated_at
-      ) VALUES (?, ?, ?, '[]', '[]', '[]', 'normal', 0, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '[]', '[]', 'normal', 0, ?, ?, ?)`
     )
-    .bind(`${owner.id}:${target.id}`, owner.id, target.id, hudText, now, now)
+    .bind(
+      `${owner.id}:${target.id}`,
+      owner.id,
+      target.id,
+      now,
+      position?.latitude ?? null,
+      position?.longitude ?? null,
+      position?.accuracy ?? null,
+      hudText,
+      now,
+      now
+    )
     .run();
 }
 
-export async function exchangeContact(owner: UserRow, publicCode: string) {
+export async function exchangeContact(owner: UserRow, publicCode: string, position: ExchangePosition = null) {
   const db = await ensureMataneDb();
   const target = await db
     .prepare("SELECT * FROM users WHERE public_code = ?")
@@ -802,8 +896,13 @@ export async function exchangeContact(owner: UserRow, publicCode: string) {
     .first<UserRow>();
   if (!target) throw new Error("その交換コードは見つかりませんでした。");
   if (target.id === owner.id) throw new Error("自分自身とは交換できません。");
-  await addContactPair(db, owner, target);
-  await addContactPair(db, target, owner);
+  const exchangePosition = position ?? (
+    owner.latitude != null && owner.longitude != null && isFresh(owner.last_seen)
+      ? { latitude: owner.latitude, longitude: owner.longitude, accuracy: owner.location_accuracy }
+      : null
+  );
+  await addContactPair(db, owner, target, exchangePosition);
+  await addContactPair(db, target, owner, exchangePosition);
   const contacts = await listContacts(owner.id);
   return {
     contacts,
@@ -847,13 +946,20 @@ export async function getContactPortrait(ownerId: string, contactUserId: string)
   const db = await ensureMataneDb();
   return (await db
     .prepare(
-      `SELECT portrait_key, portrait_full_body_key, portrait_mode, portrait_disclaimer, portrait_updated_at
+      `SELECT portrait_key, portrait_full_body_key,
+       portrait_previous_key, portrait_previous_full_body_key,
+       portrait_previous_mode, portrait_previous_updated_at,
+       portrait_mode, portrait_disclaimer, portrait_updated_at
        FROM contacts WHERE owner_id = ? AND contact_user_id = ?`
     )
     .bind(ownerId, contactUserId)
     .first<{
       portrait_key: string;
       portrait_full_body_key: string;
+      portrait_previous_key: string;
+      portrait_previous_full_body_key: string;
+      portrait_previous_mode: string;
+      portrait_previous_updated_at: string | null;
       portrait_mode: string;
       portrait_disclaimer: string;
       portrait_updated_at: string | null;
@@ -865,6 +971,10 @@ export async function saveContactPortrait(input: {
   contactUserId: string;
   faceKey: string;
   fullBodyKey: string;
+  previousFaceKey: string;
+  previousFullBodyKey: string;
+  previousMode: "openai" | "fallback" | "";
+  previousUpdatedAt: string | null;
   mode: "openai" | "fallback";
   disclaimer: string;
 }) {
@@ -872,10 +982,89 @@ export async function saveContactPortrait(input: {
   const now = new Date().toISOString();
   const result = await db
     .prepare(
-      `UPDATE contacts SET portrait_key = ?, portrait_full_body_key = ?, portrait_mode = ?, portrait_disclaimer = ?,
+      `UPDATE contacts SET portrait_key = ?, portrait_full_body_key = ?,
+       portrait_previous_key = ?, portrait_previous_full_body_key = ?,
+       portrait_previous_mode = ?, portrait_previous_updated_at = ?,
+       portrait_mode = ?, portrait_disclaimer = ?,
        portrait_updated_at = ?, updated_at = ? WHERE owner_id = ? AND contact_user_id = ?`
     )
-    .bind(input.faceKey, input.fullBodyKey, input.mode, input.disclaimer, now, now, input.ownerId, input.contactUserId)
+    .bind(
+      input.faceKey,
+      input.fullBodyKey,
+      input.previousFaceKey,
+      input.previousFullBodyKey,
+      input.previousMode,
+      input.previousUpdatedAt,
+      input.mode,
+      input.disclaimer,
+      now,
+      now,
+      input.ownerId,
+      input.contactUserId
+    )
+    .run();
+  if (!result.meta.changes) throw new Error("交換済みの相手が見つかりませんでした。");
+  return getContact(input.ownerId, input.contactUserId);
+}
+
+export async function finalizeContactPortrait(input: {
+  ownerId: string;
+  contactUserId: string;
+  choice: "current" | "previous";
+}) {
+  const db = await ensureMataneDb();
+  const saved = await getContactPortrait(input.ownerId, input.contactUserId);
+  if (!saved) throw new Error("交換済みの相手が見つかりませんでした。");
+  if (!saved.portrait_previous_key || !saved.portrait_previous_full_body_key) {
+    throw new Error("比較できる前回画像がありません。");
+  }
+  const now = new Date().toISOString();
+  if (input.choice === "previous") {
+    await db
+      .prepare(
+        `UPDATE contacts SET portrait_key = ?, portrait_full_body_key = ?, portrait_mode = ?,
+         portrait_updated_at = ?, portrait_previous_key = '', portrait_previous_full_body_key = '',
+         portrait_previous_mode = '', portrait_previous_updated_at = NULL, updated_at = ?
+         WHERE owner_id = ? AND contact_user_id = ?`
+      )
+      .bind(
+        saved.portrait_previous_key,
+        saved.portrait_previous_full_body_key,
+        saved.portrait_previous_mode || "fallback",
+        saved.portrait_previous_updated_at || now,
+        now,
+        input.ownerId,
+        input.contactUserId
+      )
+      .run();
+  } else {
+    await db
+      .prepare(
+        `UPDATE contacts SET portrait_previous_key = '', portrait_previous_full_body_key = '',
+         portrait_previous_mode = '', portrait_previous_updated_at = NULL, updated_at = ?
+         WHERE owner_id = ? AND contact_user_id = ?`
+      )
+      .bind(now, input.ownerId, input.contactUserId)
+      .run();
+  }
+  return {
+    contact: await getContact(input.ownerId, input.contactUserId),
+    discardedKeys: input.choice === "previous"
+      ? [saved.portrait_key, saved.portrait_full_body_key]
+      : [saved.portrait_previous_key, saved.portrait_previous_full_body_key],
+  };
+}
+
+export async function updateContactNickname(input: {
+  ownerId: string;
+  contactUserId: string;
+  nickname: string;
+}) {
+  const db = await ensureMataneDb();
+  const nickname = input.nickname.trim().slice(0, 30);
+  const result = await db
+    .prepare("UPDATE contacts SET nickname = ?, updated_at = ? WHERE owner_id = ? AND contact_user_id = ?")
+    .bind(nickname, new Date().toISOString(), input.ownerId, input.contactUserId)
     .run();
   if (!result.meta.changes) throw new Error("交換済みの相手が見つかりませんでした。");
   return getContact(input.ownerId, input.contactUserId);
@@ -991,10 +1180,11 @@ export async function addDemoNearby(owner: UserRow, latitude: number, longitude:
   const tanaka = await db.prepare("SELECT * FROM users WHERE id = 'demo-tanaka'").first<UserRow>();
   const sato = await db.prepare("SELECT * FROM users WHERE id = 'demo-sato'").first<UserRow>();
   if (!tanaka || !sato) throw new Error("デモ人物を準備できませんでした。");
-  await addContactPair(db, owner, tanaka);
-  await addContactPair(db, tanaka, owner);
-  await addContactPair(db, owner, sato);
-  await addContactPair(db, sato, owner);
+  const position = { latitude, longitude, accuracy: 20 };
+  await addContactPair(db, owner, tanaka, position);
+  await addContactPair(db, tanaka, owner, position);
+  await addContactPair(db, owner, sato, position);
+  await addContactPair(db, sato, owner, position);
   await db.batch([
     db
       .prepare(

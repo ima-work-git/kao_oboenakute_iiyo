@@ -1026,3 +1026,75 @@ body {
   .identity-images.is-compact { width: 84px; }
   .identity-images.is-compact .portrait-thumbnail.is-full-body { left: 50px; }
 }
+
+/* Private contact context and portrait selection. */
+.person-title h3 em,
+.contact-copy strong em {
+  display: inline-block;
+  max-width: 120px;
+  margin-left: 7px;
+  border-radius: 10px;
+  background: #e8f2ed;
+  color: #315d49;
+  padding: 3px 6px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contact-copy .list-memo {
+  display: block;
+  margin-top: 5px;
+  color: #3e4b45;
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contact-copy .exchange-summary {
+  display: block;
+  margin-top: 3px;
+  color: #7b8580;
+  font-size: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contact-name-line { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.contact-name-line h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-name-line b { flex: 0 1 auto; max-width: 130px; border-radius: 10px; background: #e2eee8; color: #315d49; padding: 4px 7px; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nickname-editor {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin: -7px 0 12px;
+}
+.nickname-editor label { display: grid; gap: 6px; margin: 0; }
+.nickname-editor label > span { color: #68756e; font-size: 9px; font-weight: 750; }
+.nickname-editor label small { color: #8a948f; font-size: 8px; }
+.nickname-editor input { width: 100%; min-height: 42px; border: 1px solid #ced4cf; border-radius: 10px; background: white; color: var(--ink); padding: 0 11px; font-size: 12px; }
+.nickname-editor button { align-self: end; min-height: 42px; border: 0; border-radius: 10px; background: var(--forest); color: white; padding: 0 13px; font-size: 10px; font-weight: 750; }
+.exchange-history { margin: 0 0 14px; border: 1px solid #d9ddd8; border-radius: 12px; background: #f7f7f3; padding: 11px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.exchange-history > div { min-width: 0; display: flex; align-items: center; gap: 9px; }
+.exchange-history > div > span { width: 28px; height: 28px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: #e3eee8; color: #315d49; }
+.exchange-history p { min-width: 0; margin: 0; display: grid; gap: 3px; }
+.exchange-history strong { color: var(--ink); font-size: 10px; }
+.exchange-history small { color: #6f7a74; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exchange-history a { flex: 0 0 auto; border: 1px solid #aeb9b2; border-radius: 9px; color: #40554a; padding: 7px 8px; font-size: 8px; font-weight: 750; text-decoration: none; }
+.portrait-comparison { margin: 14px 0 2px; border-top: 1px solid #d7ddd9; padding-top: 14px; }
+.portrait-comparison-heading { margin-bottom: 10px; display: grid; gap: 3px; }
+.portrait-comparison-heading strong { color: var(--ink); font-size: 12px; }
+.portrait-comparison-heading small { color: #748079; font-size: 9px; }
+.portrait-pair.is-previous { border-radius: 12px; background: #eef1ed; padding: 9px; }
+.portrait-choice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.portrait-choice-actions button { min-height: 44px; border: 1px solid #9ba9a1; border-radius: 10px; background: white; color: #3f5148; padding: 8px; font-size: 10px; font-weight: 750; }
+.portrait-choice-actions button:last-child { border-color: var(--forest); background: var(--forest); color: white; }
+.portrait-history-loading { margin: 0; border: 1px dashed #c8ceca; border-radius: 10px; padding: 14px; color: #6f7973; text-align: center; font-size: 10px; }
+.exchange-record-note { margin: -8px 2px 0; border-left: 3px solid #87a696; padding: 7px 10px; color: #58645e; font-size: 10px; line-height: 1.5; }
+.exchange-record-note small { color: #7d8782; font-size: 8px; }
+.nav-friends { font-family: system-ui, sans-serif; font-size: 18px !important; line-height: 1; filter: grayscale(1); }

@@ -43,6 +43,13 @@
       "when": 1784533983276,
       "tag": "0005_green_praxagora",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784536640376,
+      "tag": "0006_black_misty_knight",
+      "breakpoints": true
     }
   ]
 }

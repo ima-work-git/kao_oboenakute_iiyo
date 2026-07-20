@@ -47,6 +47,7 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /近くの人を表示/);
   assert.match(app, /位置情報を共有する（1時間）/);
   assert.match(app, /近くの人<small>Nearby/);
+  assert.match(app, /150m以内/);
   assert.match(app, /メール連携・変更/);
   assert.match(app, /プロフィール設定/);
   assert.match(app, /ログアウトする \/ Sign out/);
@@ -61,6 +62,9 @@ test("builds the MATANE mobile experience", async () => {
   assert.ok(app.indexOf('className="portrait-studio"') < app.indexOf('className="memory-notes-panel"'));
   assert.match(app, /faceSrc=\{portraits\[contact\.contactUserId\]\?\.face\?\.dataUrl\}/);
   assert.match(app, /fullBodySrc=\{portraits\[contact\.contactUserId\]\?\.fullBody\?\.dataUrl\}/);
+  assert.match(app, /className="nav-friends"[^>]*>👤<\/span>/);
+  assert.match(app, /singleLineMemo\(contact\.memos\[contact\.memos\.length - 1\]\.text\)/);
+  assert.match(app, /className="list-memo"/);
   assert.doesNotMatch(app, /会場モード|この会場にいる間だけ|自分のQRを相手に見せる|このQRを相手に見せる|読み取ると一度だけ自動交換します/);
   assert.doesNotMatch(app, /CAMERALESS CONNECTION|REUNION RADAR|ONE-TIME EXCHANGE|AI IMAGINED PORTRAIT|ORIGINAL NOTES|SHOW & SCAN|MY PROFILE/);
   assert.match(css, /Calm, familiar mobile UI/);
@@ -73,6 +77,36 @@ test("builds the MATANE mobile experience", async () => {
   await access(new URL("app/apple-icon.png", root));
   await access(new URL("public/matane-app-icon.svg", root));
   await access(new URL("dist/server/index.js", root));
+});
+
+test("stores private exchange context, nicknames, and a final portrait choice", async () => {
+  const [app, database, schema, exchangeRoute, contactRoute, portraitRoute, migration] = await Promise.all([
+    readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("db/matane.ts", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("app/api/exchange/route.ts", root), "utf8"),
+    readFile(new URL("app/api/contact/route.ts", root), "utf8"),
+    readFile(new URL("app/api/portrait/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0006_black_misty_knight.sql", root), "utf8"),
+  ]);
+  assert.match(database, /NEARBY_RADIUS_METERS = 150/);
+  assert.match(database, /LOCATION_TTL_MS = 60 \* 60 \* 1000/);
+  assert.match(schema, /exchangedAt/);
+  assert.match(schema, /exchangeLatitude/);
+  assert.match(migration, /ADD `exchanged_at`/);
+  assert.match(migration, /ADD `exchange_latitude`/);
+  assert.match(exchangeRoute, /exchangeContact\(owner, code, hasPosition/);
+  assert.match(app, /交換した日時と、許可された場合だけおおよその場所/);
+  assert.match(app, /className="exchange-history"/);
+  assert.match(schema, /nickname/);
+  assert.match(contactRoute, /updateContactNickname/);
+  assert.match(app, /自分だけのニックネーム/);
+  assert.match(schema, /portraitPreviousKey/);
+  assert.match(migration, /ADD `portrait_previous_key`/);
+  assert.match(portraitRoute, /export async function PATCH/);
+  assert.match(portraitRoute, /finalizeContactPortrait/);
+  assert.match(app, /前回に戻して採用/);
+  assert.match(app, /今回を採用/);
 });
 
 test("ships durable data and no disposable starter preview", async () => {

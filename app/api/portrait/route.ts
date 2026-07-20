@@ -1,16 +1,23 @@
 import { env } from "cloudflare:workers";
-import { getContact, getContactPortrait, requireUser, saveContactPortrait } from "@/db/matane";
+import {
+  finalizeContactPortrait,
+  getContact,
+  getContactPortrait,
+  requireUser,
+  saveContactPortrait,
+} from "@/db/matane";
 import { generateImaginedPortraitPair } from "@/lib/openai";
 
 function decodeImageDataUrl(dataUrl: string) {
-  const match = dataUrl.match(/^data:([^;,]+)(;base64)?,(.*)$/s);
+  const match = dataUrl.match(/^data:([^,]+),(.*)$/s);
   if (!match) throw new Error("生成画像を保存できませんでした。");
-  const contentType = match[1];
-  if (match[2]) {
-    const binary = atob(match[3]);
+  const metadata = match[1].split(";");
+  const contentType = metadata[0] || "application/octet-stream";
+  if (metadata.includes("base64")) {
+    const binary = atob(match[2]);
     return { contentType, bytes: Uint8Array.from(binary, (character) => character.charCodeAt(0)) };
   }
-  return { contentType, bytes: new TextEncoder().encode(decodeURIComponent(match[3])) };
+  return { contentType, bytes: new TextEncoder().encode(decodeURIComponent(match[2])) };
 }
 
 function extensionFor(contentType: string) {
@@ -25,9 +32,15 @@ export async function GET(request: Request) {
     const owner = await requireUser(request);
     const url = new URL(request.url);
     const contactUserId = url.searchParams.get("contactUserId")?.trim() || "";
-    const kind = url.searchParams.get("kind") === "fullBody" ? "fullBody" : "face";
+    const kind = url.searchParams.get("kind") || "face";
     const saved = contactUserId ? await getContactPortrait(owner.id, contactUserId) : null;
-    const key = kind === "fullBody" ? saved?.portrait_full_body_key : saved?.portrait_key;
+    const key = kind === "fullBody"
+      ? saved?.portrait_full_body_key
+      : kind === "previousFace"
+        ? saved?.portrait_previous_key
+        : kind === "previousFullBody"
+          ? saved?.portrait_previous_full_body_key
+          : saved?.portrait_key;
     if (!key) return Response.json({ error: "保存画像がありません。" }, { status: 404 });
     const media = (env as unknown as { MEDIA?: R2Bucket }).MEDIA;
     if (!media) return Response.json({ error: "画像保存先が利用できません。" }, { status: 503 });
@@ -79,13 +92,23 @@ export async function POST(request: Request) {
         contactUserId,
         faceKey,
         fullBodyKey,
+        previousFaceKey: previous?.portrait_key && previous?.portrait_full_body_key ? previous.portrait_key : "",
+        previousFullBodyKey: previous?.portrait_key && previous?.portrait_full_body_key ? previous.portrait_full_body_key : "",
+        previousMode: previous?.portrait_key && previous?.portrait_full_body_key
+          ? previous.portrait_mode === "openai" ? "openai" : "fallback"
+          : "",
+        previousUpdatedAt: previous?.portrait_key && previous?.portrait_full_body_key
+          ? previous.portrait_updated_at
+          : null,
         mode: portraits.face.mode,
         disclaimer,
       });
       await Promise.all([
-        previous?.portrait_key && previous.portrait_key !== faceKey ? media.delete(previous.portrait_key) : Promise.resolve(),
-        previous?.portrait_full_body_key && previous.portrait_full_body_key !== fullBodyKey
-          ? media.delete(previous.portrait_full_body_key)
+        previous?.portrait_previous_key && previous.portrait_previous_key !== previous.portrait_key
+          ? media.delete(previous.portrait_previous_key)
+          : Promise.resolve(),
+        previous?.portrait_previous_full_body_key && previous.portrait_previous_full_body_key !== previous.portrait_full_body_key
+          ? media.delete(previous.portrait_previous_full_body_key)
           : Promise.resolve(),
       ]).catch(() => undefined);
     }
@@ -101,6 +124,32 @@ export async function POST(request: Request) {
     return Response.json(
       { error: error instanceof Error ? error.message : "想像ポートレートを生成できませんでした。" },
       { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const owner = await requireUser(request);
+    const payload = (await request.json()) as { contactUserId?: string; choice?: string };
+    const contactUserId = payload.contactUserId?.trim() || "";
+    const choice = payload.choice === "previous" ? "previous" : payload.choice === "current" ? "current" : null;
+    if (!contactUserId || !choice) {
+      return Response.json({ error: "採用する画像を選んでください。" }, { status: 400 });
+    }
+    const result = await finalizeContactPortrait({ ownerId: owner.id, contactUserId, choice });
+    const media = (env as unknown as { MEDIA?: R2Bucket }).MEDIA;
+    if (media) {
+      await Promise.all(result.discardedKeys.filter(Boolean).map((key) => media.delete(key))).catch(() => undefined);
+    }
+    return Response.json({ contact: result.contact, choice });
+  } catch (error) {
+    if (error instanceof Error && error.message === "SESSION_REQUIRED") {
+      return Response.json({ error: "プロフィールを作成してください。" }, { status: 401 });
+    }
+    return Response.json(
+      { error: error instanceof Error ? error.message : "画像を採用できませんでした。" },
+      { status: 400 }
     );
   }
 }
