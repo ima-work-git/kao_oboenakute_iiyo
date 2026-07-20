@@ -614,7 +614,6 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     return (
       <main className="onboarding-shell">
         <section className="onboarding-copy">
-          <div className="eyebrow"><span /> CAMERALESS CONNECTION</div>
           <p className="wordmark">MATANE <small>またね</small></p>
           <h1>名前を思い出す前に、<br />近くにいるとわかる。</h1>
           <p className="lead">
@@ -628,14 +627,13 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         </section>
         {!account && !guestMode && (
           <section className="auth-card">
-            <div className="auth-icon">✉</div>
-            <p className="step-label">WELCOME BACK / はじめての方も</p>
+            <p className="step-label">MATANEへようこそ</p>
             <h2>メールでログイン</h2>
             <p>登録済みのプロフィールを、シークレットモードや別端末でも復元できます。</p>
             <a className="auth-primary" href={SIGN_IN_PATH}>ChatGPTでメールを確認 <span>→</span><small>Verify email with ChatGPT</small></a>
-            <div className="auth-divider"><span />または審査用にすぐ体験 / JUDGE DEMO<span /></div>
+            <div className="auth-divider"><span />または審査用にすぐ体験<span /></div>
             <button className="reviewer-entry" type="button" onClick={startReviewerDemo} disabled={busy}>
-              <span>✦</span>
+              <span>体験</span>
               <strong>{busy ? "準備中… / Preparing…" : "審査デモを開始 / Start judge demo"}</strong>
               <small>登録不要 · 友達20人 · 渋谷ソラスタに10人</small>
               <b>→</b>
@@ -646,7 +644,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         )}
         {(account || guestMode) && (
           <form className="onboarding-card" onSubmit={createProfile}>
-            <p className="step-label">01 — あなたのプロフィール / YOUR PROFILE</p>
+            <p className="step-label">あなたのプロフィール</p>
             {account ? (
               <div className="verified-account"><span>✓</span><p><strong>メール確認済み / VERIFIED</strong>{account.email}</p></div>
             ) : (
@@ -672,16 +670,14 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
 
   return (
     <main className="app-shell">
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
       <header className="app-header">
         <div>
           <p className="app-wordmark">MATANE <span>またね</span></p>
-          <p className="header-caption">{user.name} · My profile</p>
+          <p className="header-caption">{user.name}さん</p>
         </div>
         <div className="header-actions">
           <button className={`status-pill ${locationActive ? "is-live" : ""}`} onClick={locationActive ? disableLocation : enableLocation}>
-            <span /> {locationActive ? "探索中 / Live" : "停止中 / Off"}
+            <span /> {locationActive ? "近く ON" : "近く OFF"}
           </button>
           <button
             className={`menu-button ${menuOpen ? "is-open" : ""}`}
@@ -699,25 +695,24 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
           <section className="screen nearby-screen">
             {reviewerMode && (
               <div className="reviewer-demo-guide">
-                <span>JUDGE DEMO</span>
+                <span>審査デモ</span>
                 <div><strong>渋谷ソラスタで再会するシナリオ</strong><small>20人と交換済み。そのうち特徴の異なる10人が会場にいます。友達を押してメモと想像ポートレートを試してください。</small></div>
                 <b>10 / 20</b>
               </div>
             )}
             <div className="hero-panel">
-              <p className="hero-kicker">REUNION RADAR</p>
               <h1>{nearbyContacts.length ? `${nearbyContacts.length}人が近くにいます` : "近くの友達を探す"}<small>{nearbyContacts.length ? `${nearbyContacts.length} friends nearby` : "Find nearby friends"}</small></h1>
-              <p>{locationActive ? locationLabel : "位置共有は1時間で失効。座標そのものは相手に表示されません。 / Location expires in one hour."}</p>
+              <p>{locationActive ? locationLabel : "この会場にいる間だけ、位置情報を1時間共有します。座標は友達にも表示されません。"}</p>
               <button className="radar-button" onClick={locationActive ? disableLocation : enableLocation}>
-                <span className="radar-icon"><i /><i /><b /></span>
-                <strong>{locationActive ? "探索を止める / Stop" : "探索をはじめる / Start"}</strong>
-                <small>{locationActive ? "別タブ中は更新が遅くなる場合があります" : "位置情報の許可が必要です / Location required"}</small>
+                <span className="location-mark" aria-hidden="true">⌖</span>
+                <strong>{locationActive ? "近くの共有を止める" : "近くの友達を探す"}</strong>
+                <small>{locationActive ? "別タブ中は更新が遅くなる場合があります" : "位置情報の許可が必要です"}</small>
               </button>
             </div>
 
             <div className="section-heading">
-              <div><p>NEAR YOU</p><h2>近くの友達 <small>Nearby friends</small></h2></div>
-              <span>{nearbyContacts.length.toString().padStart(2, "0")}</span>
+              <div><h2>近くの友達 <small>Nearby friends</small></h2></div>
+              <span>{nearbyContacts.length}人</span>
             </div>
 
             {nearbyContacts.length ? (
@@ -742,20 +737,19 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               </div>
             ) : (
               <div className="empty-state">
-                <div className="empty-orbit"><span /></div>
                 <h3>{locationActive ? "友達を探しています / Searching…" : "探索を始めると、ここに表示されます"}</h3>
                 <p>実機が1台でも、体験モードで再会通知を試せます。 / Try with one phone.</p>
                 <button className="secondary-button" onClick={addDemo} disabled={busy}>{busy ? "準備中…" : "30秒で体験 / Try demo"}</button>
               </div>
             )}
 
-            <div className="privacy-strip"><span>⌁</span><p><strong>Privacy by design</strong>交換していない人は表示されません。 / Only exchanged friends appear.</p></div>
+            <p className="privacy-strip">交換していない人は表示されません。位置情報は1時間で自動的に切れます。<br /><small>Only exchanged friends appear. Location expires in one hour.</small></p>
           </section>
         )}
 
         {tab === "friends" && (
           <section className="screen memory-screen">
-            <div className="screen-intro"><p>FRIENDS</p><h1>友達 <small>Friends</small></h1><span>{contacts.length}人</span></div>
+            <div className="screen-intro"><h1>友達 <small>Friends</small></h1><span>{contacts.length}人</span></div>
             {!contacts.length ? (
               <div className="empty-state compact"><h3>まだ友達がいません / No friends yet</h3><p>QRか交換コードで一度だけ交換しましょう。</p><button className="secondary-button" onClick={() => setTab("exchange")}>交換する / Exchange</button></div>
             ) : (
@@ -772,9 +766,9 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
 
             {selectedContact && (
               <div className="memory-editor" id="friend-detail">
-                <div className="editor-header"><PersonAvatar name={selectedContact.name} src={selectedContact.avatarDataUrl} className="avatar large" /><div><p>FRIEND NOTE</p><h2>{selectedContact.name}</h2><span>{selectedContact.reading && `${selectedContact.reading} · `}{selectedContact.org}</span></div><button onClick={() => setSelectedId(null)} aria-label="閉じる / Close">×</button></div>
+                <div className="editor-header"><PersonAvatar name={selectedContact.name} src={selectedContact.avatarDataUrl} className="avatar large" /><div><h2>{selectedContact.name}</h2><span>{selectedContact.reading && `${selectedContact.reading} · `}{selectedContact.org}</span></div><button onClick={() => setSelectedId(null)} aria-label="閉じる / Close">×</button></div>
                 <section className="raw-memos" aria-label="入力したメモ原文">
-                  <div className="raw-memos-heading"><div><p>ORIGINAL NOTES</p><h3>メモ原文 <small>Original notes</small></h3></div><span>{selectedContact.memos.length}件</span></div>
+                  <div className="raw-memos-heading"><div><h3>メモ <small>Notes</small></h3></div><span>{selectedContact.memos.length}件</span></div>
                   {selectedContact.memos.length ? (
                     <div className="raw-memo-list">
                       {selectedContact.memos.map((item, index) => (
@@ -799,23 +793,23 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                     <p className="no-raw-memos">まだメモはありません。下の欄から特徴を保存しましょう。<br />No notes yet — add one below.</p>
                   )}
                 </section>
-                <section className="portrait-studio" aria-label="AI想像ポートレート">
-                  <div className="portrait-heading"><div><p>AI IMAGINED PORTRAIT</p><h3>メモに忠実な実写風イメージ</h3><small>Faithful photorealistic impression</small></div><span>{portraits[selectedContact.contactUserId]?.mode === "fallback" ? "DEMO" : "OPENAI"}</span></div>
+                <section className="portrait-studio" aria-label="メモから作るイメージ">
+                  <div className="portrait-heading"><div><h3>メモから作るイメージ</h3><small>Image imagined from your notes</small></div></div>
                   {portraits[selectedContact.contactUserId] ? (
                     <div className="portrait-result">
                       <Image src={portraits[selectedContact.contactUserId].dataUrl} alt={`${selectedContact.name}さんのメモから作ったAI想像ポートレート`} fill unoptimized sizes="260px" />
-                      <span>{portraits[selectedContact.contactUserId].mode === "openai" ? "AIの想像 / IMAGINED" : "DEMO"}</span>
+                      <span>メモから生成</span>
                     </div>
                   ) : (
-                    <div className="portrait-placeholder"><span>{initials(selectedContact.name)}</span><i /><i /></div>
+                    <div className="portrait-placeholder"><span>{initials(selectedContact.name)}</span></div>
                   )}
                   {portraitBusyId === selectedContact.contactUserId && (
                     <div className="portrait-waiting" role="status" aria-live="polite">
                       <span className="portrait-waiting-mark" aria-hidden="true"><i /><b>?</b></span>
                       <div>
-                        <strong>AI画像は少し時間がかかります</strong>
+                        <strong>画像を作成中です</strong>
                         <p>{portraitWaitingMessage}</p>
-                        <small>Please keep this screen open while AI is drawing.</small>
+                        <small>少し時間がかかります。この画面を開いたままお待ちください。</small>
                       </div>
                     </div>
                   )}
@@ -826,7 +820,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
                     onClick={() => generatePortrait(selectedContact)}
                     disabled={portraitBusyId === selectedContact.contactUserId || !selectedContact.memos.length}
                   >
-                    <span>✦</span>{portraitBusyId === selectedContact.contactUserId ? "OpenAIが描いています… / Generating…" : portraits[selectedContact.contactUserId] ? "実写風でもう一度描く / Regenerate" : "実写風に想像して描く / Imagine"}
+                    {portraitBusyId === selectedContact.contactUserId ? "画像を作成中… / Generating…" : portraits[selectedContact.contactUserId] ? "もう一度作る / Regenerate" : "イメージを作る / Create image"}
                   </button>
                   <small>{portraits[selectedContact.contactUserId]?.disclaimer || "本人の顔を再現・特定するものではありません。"}</small>
                 </section>
@@ -866,23 +860,22 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
 
         {tab === "exchange" && (
           <section className="screen exchange-screen">
-            <div className="screen-intro"><p>ONE-TIME EXCHANGE</p><h1>交換 <small>Exchange</small></h1></div>
+            <div className="screen-intro"><h1>友達と交換 <small>Exchange</small></h1></div>
             <div className="qr-card">
-              <div className="qr-heading"><p>見せるだけで交換</p><span>SHOW &amp; SCAN</span></div>
+              <div className="qr-heading"><p>相手にこの画面を見せてください</p></div>
               <div className="qr-frame">
                 {qrDataUrl ? <Image className="qr-image" src={qrDataUrl} alt="MATANE交換用QRコード" width={360} height={360} unoptimized priority /> : <span>QRを作成中…</span>}
               </div>
               <h2>このQRを相手に見せる</h2>
               <p>読み取ると一度だけ自動交換します。<br /><small>They scan once to exchange automatically.</small></p>
-              <div className="exchange-code-inline"><span>CODE</span><strong>{user.publicCode}</strong></div>
+              <div className="exchange-code-inline"><span>交換コード</span><strong>{user.publicCode}</strong></div>
               <button onClick={shareCode}>交換リンクを共有 / Share link <b>↗</b></button>
             </div>
             <form className="exchange-form" onSubmit={exchange}>
-              <p className="step-label">QRが読めないとき / ENTER A CODE</p>
+              <p className="step-label">QRが読めないときは交換コードを入力</p>
               <input value={exchangeCode} onChange={(event) => setExchangeCode(event.target.value.toUpperCase())} placeholder="ABC123" maxLength={6} autoCapitalize="characters" spellCheck={false} />
               <button className="primary-button" disabled={busy || exchangeCode.length < 6}>{busy ? "交換中… / Exchanging…" : "この人と交換 / Exchange"}<span>→</span></button>
             </form>
-            <div className="how-it-works"><p>交換後は / AFTER EXCHANGE</p><ol><li><span>1</span>どんな人だったかメモ / Add a note</li><li><span>2</span>会場で「近く」をON / Turn Nearby on</li><li><span>3</span>友達だけ再会通知 / Get friend alerts</li></ol></div>
           </section>
         )}
       </div>
@@ -891,7 +884,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="自分の登録情報" onClick={() => { setAvatarDraft(user.avatarDataUrl); setMenuOpen(false); }}>
           <aside className="profile-drawer" onClick={(event) => event.stopPropagation()}>
             <form className="profile-editor" onSubmit={updateProfile}>
-              <div className="profile-editor-heading"><div><p>MY PROFILE</p><h2>自分の登録情報 <small>My profile</small></h2></div><button type="button" onClick={() => { setAvatarDraft(user.avatarDataUrl); setMenuOpen(false); }} aria-label="閉じる / Close">×</button></div>
+              <div className="profile-editor-heading"><div><h2>自分の登録情報 <small>My profile</small></h2></div><button type="button" onClick={() => { setAvatarDraft(user.avatarDataUrl); setMenuOpen(false); }} aria-label="閉じる / Close">×</button></div>
               <div className={`account-panel ${user.accountEmail ? "is-linked" : ""}`}>
                 <span>{user.accountEmail ? "✓" : "✉"}</span>
                 <div><strong>{user.accountEmail ? "メール連携済み / EMAIL LINKED" : "メールを連携 / LINK EMAIL"}</strong><small>{user.accountEmail || "別端末やシークレットモードでも復元できます"}</small></div>
@@ -910,8 +903,8 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
 
       <nav className="bottom-nav" aria-label="メインメニュー / Main menu">
         <button className={tab === "exchange" ? "active" : ""} onClick={() => setTab("exchange")}><span className="nav-exchange">↔</span><b>交換<small>Exchange</small></b></button>
-        <button className={tab === "nearby" ? "active" : ""} onClick={() => setTab("nearby")}><span className="nav-radar" /><b>近く<small>Nearby</small></b></button>
-        <button className={tab === "friends" ? "active" : ""} onClick={() => setTab("friends")}><span className="nav-memory">◎</span><b>友達<small>Friends</small></b></button>
+        <button className={tab === "nearby" ? "active" : ""} onClick={() => setTab("nearby")}><span aria-hidden="true">⌖</span><b>近く<small>Nearby</small></b></button>
+        <button className={tab === "friends" ? "active" : ""} onClick={() => setTab("friends")}><span className="nav-memory">○</span><b>友達<small>Friends</small></b></button>
       </nav>
 
       {toast && <div className="toast" role="status">{toast}</div>}

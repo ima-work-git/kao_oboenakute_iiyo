@@ -19,10 +19,10 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /顔認証なし/);
   assert.match(app, /MATANEをはじめる/);
   assert.match(app, /visibilitychange/);
-  assert.match(app, /AI IMAGINED PORTRAIT/);
+  assert.match(app, /メモから作るイメージ/);
   assert.match(app, /PORTRAIT_WAITING_MESSAGES/);
   assert.match(app, /トイレに篭って待つのも作戦です/);
-  assert.match(app, /AI画像は少し時間がかかります/);
+  assert.match(app, /画像を作成中です/);
   assert.match(app, /setPortraitWaitingMessage/);
   assert.match(app, /portrait-waiting-mark[^\n]+<i \/><b>\?<\/b>/);
   assert.match(css, /portrait-waiting/);
@@ -43,6 +43,11 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /友達 <small>Friends/);
   assert.match(app, /\/api\/profile/);
   assert.match(app, /本人の顔を再現・特定するものではありません/);
+  assert.match(app, /友達と交換/);
+  assert.match(app, /近くの友達を探す/);
+  assert.doesNotMatch(app, /CAMERALESS CONNECTION|REUNION RADAR|ONE-TIME EXCHANGE|AI IMAGINED PORTRAIT|ORIGINAL NOTES|SHOW & SCAN|MY PROFILE/);
+  assert.match(css, /Calm, familiar mobile UI/);
+  assert.match(css, /\.bottom-nav[\s\S]*background: rgba\(255, 255, 255, \.97\)/);
   assert.match(layout, /viewportFit:\s*"cover"/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(manifest, /matane-app/);
@@ -122,7 +127,7 @@ test("keeps AI structure private while original notes remain editable", async ()
     readFile(new URL("app/api/memory/route.ts", root), "utf8"),
     readFile(new URL("db/matane.ts", root), "utf8"),
   ]);
-  assert.match(app, /ORIGINAL NOTES/);
+  assert.match(app, /<h3>メモ <small>Notes<\/small><\/h3>/);
   assert.match(app, /編集 \/ Edit/);
   assert.match(app, /削除 \/ Delete/);
   assert.match(memoryRoute, /export async function PATCH/);
