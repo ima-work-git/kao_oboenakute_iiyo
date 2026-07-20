@@ -1,0 +1,1 @@
+ALTER TABLE `contacts` ADD `portrait_full_body_key` text DEFAULT '' NOT NULL;

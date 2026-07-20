@@ -37,6 +37,7 @@ export const contacts = sqliteTable(
     facts: text("facts").notNull().default("[]"),
     visualTraits: text("visual_traits").notNull().default("[]"),
     portraitKey: text("portrait_key").notNull().default(""),
+    portraitFullBodyKey: text("portrait_full_body_key").notNull().default(""),
     portraitMode: text("portrait_mode").notNull().default(""),
     portraitDisclaimer: text("portrait_disclaimer").notNull().default(""),
     portraitUpdatedAt: text("portrait_updated_at"),

@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getContact, getContactPortrait, requireUser, saveContactPortrait } from "@/db/matane";
-import { generateImaginedPortrait } from "@/lib/openai";
+import { generateImaginedPortraitPair } from "@/lib/openai";
 
 function decodeImageDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:([^;,]+)(;base64)?,(.*)$/s);
@@ -23,12 +23,15 @@ function extensionFor(contentType: string) {
 export async function GET(request: Request) {
   try {
     const owner = await requireUser(request);
-    const contactUserId = new URL(request.url).searchParams.get("contactUserId")?.trim() || "";
+    const url = new URL(request.url);
+    const contactUserId = url.searchParams.get("contactUserId")?.trim() || "";
+    const kind = url.searchParams.get("kind") === "fullBody" ? "fullBody" : "face";
     const saved = contactUserId ? await getContactPortrait(owner.id, contactUserId) : null;
-    if (!saved?.portrait_key) return Response.json({ error: "保存画像がありません。" }, { status: 404 });
+    const key = kind === "fullBody" ? saved?.portrait_full_body_key : saved?.portrait_key;
+    if (!key) return Response.json({ error: "保存画像がありません。" }, { status: 404 });
     const media = (env as unknown as { MEDIA?: R2Bucket }).MEDIA;
     if (!media) return Response.json({ error: "画像保存先が利用できません。" }, { status: 503 });
-    const object = await media.get(saved.portrait_key);
+    const object = await media.get(key);
     if (!object) return Response.json({ error: "保存画像が見つかりません。" }, { status: 404 });
     const headers = new Headers({ "Cache-Control": "private, max-age=300" });
     object.writeHttpMetadata(headers);
@@ -54,22 +57,40 @@ export async function POST(request: Request) {
     if (!contact) {
       return Response.json({ error: "交換済みの相手が見つかりません。" }, { status: 404 });
     }
-    const portrait = await generateImaginedPortrait(contact);
-    const disclaimer = portrait.mode === "openai"
+    const portraits = await generateImaginedPortraitPair(contact);
+    const disclaimer = portraits.face.mode === "openai"
       ? "メモから作ったAIの想像です。本人の顔を再現・特定するものではありません。"
       : "APIキー未設定のデモスケッチです。本人の顔を再現・特定するものではありません。";
     const media = (env as unknown as { MEDIA?: R2Bucket }).MEDIA;
     let updatedContact = null;
     if (media) {
       const previous = await getContactPortrait(owner.id, contactUserId);
-      const image = decodeImageDataUrl(portrait.dataUrl);
-      const key = `portraits/${owner.id}/${contactUserId}/${crypto.randomUUID()}.${extensionFor(image.contentType)}`;
-      await media.put(key, image.bytes, { httpMetadata: { contentType: image.contentType } });
-      updatedContact = await saveContactPortrait({ ownerId: owner.id, contactUserId, key, mode: portrait.mode, disclaimer });
-      if (previous?.portrait_key && previous.portrait_key !== key) await media.delete(previous.portrait_key).catch(() => undefined);
+      const faceImage = decodeImageDataUrl(portraits.face.dataUrl);
+      const fullBodyImage = decodeImageDataUrl(portraits.fullBody.dataUrl);
+      const batchId = crypto.randomUUID();
+      const faceKey = `portraits/${owner.id}/${contactUserId}/${batchId}-face.${extensionFor(faceImage.contentType)}`;
+      const fullBodyKey = `portraits/${owner.id}/${contactUserId}/${batchId}-full.${extensionFor(fullBodyImage.contentType)}`;
+      await Promise.all([
+        media.put(faceKey, faceImage.bytes, { httpMetadata: { contentType: faceImage.contentType } }),
+        media.put(fullBodyKey, fullBodyImage.bytes, { httpMetadata: { contentType: fullBodyImage.contentType } }),
+      ]);
+      updatedContact = await saveContactPortrait({
+        ownerId: owner.id,
+        contactUserId,
+        faceKey,
+        fullBodyKey,
+        mode: portraits.face.mode,
+        disclaimer,
+      });
+      await Promise.all([
+        previous?.portrait_key && previous.portrait_key !== faceKey ? media.delete(previous.portrait_key) : Promise.resolve(),
+        previous?.portrait_full_body_key && previous.portrait_full_body_key !== fullBodyKey
+          ? media.delete(previous.portrait_full_body_key)
+          : Promise.resolve(),
+      ]).catch(() => undefined);
     }
     return Response.json({
-      ...portrait,
+      portraits,
       disclaimer,
       contact: updatedContact,
     });

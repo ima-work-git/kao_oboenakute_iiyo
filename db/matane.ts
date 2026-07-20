@@ -28,7 +28,8 @@ export type ContactProfile = {
   memos: Memo[];
   facts: string[];
   visualTraits: string[];
-  portraitAvailable: boolean;
+  portraitFaceAvailable: boolean;
+  portraitFullBodyAvailable: boolean;
   portraitMode: "openai" | "fallback" | null;
   portraitDisclaimer: string;
   portraitUpdatedAt: string | null;
@@ -78,6 +79,7 @@ type ContactRow = {
   facts: string;
   visual_traits: string;
   portrait_key: string;
+  portrait_full_body_key: string;
   portrait_mode: string;
   portrait_disclaimer: string;
   portrait_updated_at: string | null;
@@ -397,7 +399,8 @@ function toContact(row: ContactRow, owner: UserRow | null): ContactProfile {
     memos: parseArray<Memo>(row.memos),
     facts: parseArray<string>(row.facts),
     visualTraits: parseArray<string>(row.visual_traits),
-    portraitAvailable: Boolean(row.portrait_key),
+    portraitFaceAvailable: Boolean(row.portrait_key),
+    portraitFullBodyAvailable: Boolean(row.portrait_full_body_key),
     portraitMode: row.portrait_mode === "openai" || row.portrait_mode === "fallback" ? row.portrait_mode : null,
     portraitDisclaimer: row.portrait_disclaimer,
     portraitUpdatedAt: row.portrait_updated_at,
@@ -488,6 +491,7 @@ export async function ensureMataneDb() {
       facts TEXT NOT NULL DEFAULT '[]',
       visual_traits TEXT NOT NULL DEFAULT '[]',
       portrait_key TEXT NOT NULL DEFAULT '',
+      portrait_full_body_key TEXT NOT NULL DEFAULT '',
       portrait_mode TEXT NOT NULL DEFAULT '',
       portrait_disclaimer TEXT NOT NULL DEFAULT '',
       portrait_updated_at TEXT,
@@ -516,6 +520,9 @@ export async function ensureMataneDb() {
   }
   if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_key")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_key TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_full_body_key")) {
+    await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_full_body_key TEXT NOT NULL DEFAULT ''").run();
   }
   if (!(contactColumns.results ?? []).some((column) => column.name === "portrait_mode")) {
     await db.prepare("ALTER TABLE contacts ADD COLUMN portrait_mode TEXT NOT NULL DEFAULT ''").run();
@@ -739,7 +746,7 @@ async function contactRows(ownerId: string) {
     .prepare(
       `SELECT
         c.owner_id, c.contact_user_id, c.tags, c.memos, c.facts, c.visual_traits,
-        c.portrait_key, c.portrait_mode, c.portrait_disclaimer, c.portrait_updated_at,
+        c.portrait_key, c.portrait_full_body_key, c.portrait_mode, c.portrait_disclaimer, c.portrait_updated_at,
         c.alert_level, c.alert_suggested, c.alert_reason, c.hud_text,
         c.created_at, c.updated_at,
         u.name AS contact_name, u.reading AS contact_reading,
@@ -840,12 +847,13 @@ export async function getContactPortrait(ownerId: string, contactUserId: string)
   const db = await ensureMataneDb();
   return (await db
     .prepare(
-      `SELECT portrait_key, portrait_mode, portrait_disclaimer, portrait_updated_at
+      `SELECT portrait_key, portrait_full_body_key, portrait_mode, portrait_disclaimer, portrait_updated_at
        FROM contacts WHERE owner_id = ? AND contact_user_id = ?`
     )
     .bind(ownerId, contactUserId)
     .first<{
       portrait_key: string;
+      portrait_full_body_key: string;
       portrait_mode: string;
       portrait_disclaimer: string;
       portrait_updated_at: string | null;
@@ -855,7 +863,8 @@ export async function getContactPortrait(ownerId: string, contactUserId: string)
 export async function saveContactPortrait(input: {
   ownerId: string;
   contactUserId: string;
-  key: string;
+  faceKey: string;
+  fullBodyKey: string;
   mode: "openai" | "fallback";
   disclaimer: string;
 }) {
@@ -863,10 +872,10 @@ export async function saveContactPortrait(input: {
   const now = new Date().toISOString();
   const result = await db
     .prepare(
-      `UPDATE contacts SET portrait_key = ?, portrait_mode = ?, portrait_disclaimer = ?,
+      `UPDATE contacts SET portrait_key = ?, portrait_full_body_key = ?, portrait_mode = ?, portrait_disclaimer = ?,
        portrait_updated_at = ?, updated_at = ? WHERE owner_id = ? AND contact_user_id = ?`
     )
-    .bind(input.key, input.mode, input.disclaimer, now, now, input.ownerId, input.contactUserId)
+    .bind(input.faceKey, input.fullBodyKey, input.mode, input.disclaimer, now, now, input.ownerId, input.contactUserId)
     .run();
   if (!result.meta.changes) throw new Error("交換済みの相手が見つかりませんでした。");
   return getContact(input.ownerId, input.contactUserId);

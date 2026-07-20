@@ -156,16 +156,19 @@ export type ImaginedPortrait = {
   mode: "openai" | "fallback";
 };
 
-function fallbackPortrait(): ImaginedPortrait {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><rect width="640" height="640" fill="#142820"/><circle cx="320" cy="255" r="125" fill="#e5eddb"/><path d="M95 640c18-172 104-256 225-256s207 84 225 256" fill="#79a941"/><circle cx="278" cy="245" r="38" fill="none" stroke="#20362e" stroke-width="14"/><circle cx="362" cy="245" r="38" fill="none" stroke="#20362e" stroke-width="14"/><path d="M316 245h8M265 315c34 28 76 28 110 0" fill="none" stroke="#20362e" stroke-width="13" stroke-linecap="round"/><circle cx="320" cy="320" r="220" fill="none" stroke="#c9f56a" stroke-opacity=".18" stroke-width="2"/><circle cx="320" cy="320" r="278" fill="none" stroke="#c9f56a" stroke-opacity=".1" stroke-width="2"/></svg>`;
+export type PortraitFraming = "face" | "fullBody";
+
+function fallbackPortrait(framing: PortraitFraming): ImaginedPortrait {
+  const faceSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><rect width="640" height="640" fill="#e7ede9"/><circle cx="320" cy="300" r="190" fill="#f7f5ef"/><circle cx="262" cy="278" r="44" fill="none" stroke="#365346" stroke-width="15"/><circle cx="378" cy="278" r="44" fill="none" stroke="#365346" stroke-width="15"/><path d="M306 278h28M246 394c48 42 100 42 148 0" fill="none" stroke="#365346" stroke-width="15" stroke-linecap="round"/></svg>`;
+  const fullBodySvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><rect width="640" height="640" fill="#e7ede9"/><circle cx="320" cy="150" r="78" fill="#f7f5ef"/><path d="M205 585c16-166 22-320 115-320s99 154 115 320" fill="#6f9c84"/><path d="M263 575l-22 65M377 575l22 65" stroke="#365346" stroke-width="30" stroke-linecap="round"/><circle cx="294" cy="140" r="18" fill="none" stroke="#365346" stroke-width="8"/><circle cx="346" cy="140" r="18" fill="none" stroke="#365346" stroke-width="8"/></svg>`;
   return {
-    dataUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    dataUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(framing === "face" ? faceSvg : fullBodySvg)}`,
     model: "deterministic-demo-sketch",
     mode: "fallback",
   };
 }
 
-export async function generateImaginedPortrait(person: ContactProfile): Promise<ImaginedPortrait> {
+export async function generateImaginedPortrait(person: ContactProfile, framing: PortraitFraming = "fullBody"): Promise<ImaginedPortrait> {
   const runtime = env as unknown as {
     OPENAI_API_KEY?: string;
     OPENAI_IMAGE_MODEL?: string;
@@ -179,16 +182,20 @@ export async function generateImaginedPortrait(person: ContactProfile): Promise<
   if (!portraitDetails.length) {
     throw new Error("先に、性別・年代・体型・服・髪型など、見た目の特徴をメモしてください。");
   }
-  if (!runtime.OPENAI_API_KEY) return fallbackPortrait();
+  if (!runtime.OPENAI_API_KEY) return fallbackPortrait(framing);
 
   const model = runtime.OPENAI_IMAGE_MODEL || "gpt-image-2";
+  const framingInstruction = framing === "face"
+    ? "Create a tight face close-up portrait. Show the complete hairstyle, forehead, eyes, nose, mouth, chin, and a small amount of shoulders. The face must be large and easy to inspect."
+    : "Create a true head-to-toe full-body photograph. The entire body, clothing, silhouette, hands, and shoes must be visible with space around the figure.";
   const prompt = [
     "Create a clearly fictional but highly photorealistic portrait inspired only by a person's written memory notes.",
     "This is an AI-imagined memory aid, not a reconstruction, identification, biometric match, or claim about the real person's face.",
+    framingInstruction,
     `MANDATORY explicitly recorded visual details: ${portraitDetails.join("; ")}.`,
     "Every mandatory detail must be visibly and unambiguously reflected. If male or female presentation, age range, height, or body build is stated, depict it exactly. A stated fat, plus-size, heavyset, stocky, slim, or muscular build must be clearly visible in the silhouette and proportions.",
     "Do not slim, beautify, idealize, soften, contradict, or swap any stated characteristic. Give equal priority to body build and gender presentation, not only hair, clothes, or facial details.",
-    "Use a natural photorealistic candid editorial-photography look with realistic skin texture, anatomy, lens depth, and soft daylight. Use a three-quarter or near-full-body composition so the stated body build is easy to see.",
+    "Use a natural photorealistic candid editorial-photography look with realistic skin texture, anatomy, lens depth, and soft daylight.",
     "Do not invent age, ethnicity, disability, religion, or gender presentation when it is not stated. Do not resemble any public figure.",
     "No words, letters, logos, watermark, frame, collage, illustration, anime styling, or UI. Centered square composition with a calm real-world background.",
   ].join("\n");
@@ -222,4 +229,12 @@ export async function generateImaginedPortrait(person: ContactProfile): Promise<
   const image = payload.data?.[0]?.b64_json;
   if (!image) throw new Error("OpenAIから画像を受け取れませんでした。");
   return { dataUrl: `data:image/jpeg;base64,${image}`, model, mode: "openai" };
+}
+
+export async function generateImaginedPortraitPair(person: ContactProfile) {
+  const [face, fullBody] = await Promise.all([
+    generateImaginedPortrait(person, "face"),
+    generateImaginedPortrait(person, "fullBody"),
+  ]);
+  return { face, fullBody };
 }

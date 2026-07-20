@@ -22,7 +22,7 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /メモから作るイメージ/);
   assert.match(app, /PORTRAIT_WAITING_MESSAGES/);
   assert.match(app, /トイレに篭って待つのも作戦です/);
-  assert.match(app, /画像を作成中です/);
+  assert.match(app, /顔アップと全身の2枚を作成中です/);
   assert.match(app, /setPortraitWaitingMessage/);
   assert.match(app, /portrait-waiting-mark[^\n]+<i \/><b>\?<\/b>/);
   assert.match(css, /portrait-waiting/);
@@ -44,8 +44,8 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /\/api\/profile/);
   assert.match(app, /本人の顔を再現・特定するものではありません/);
   assert.match(app, /友達と交換/);
-  assert.match(app, /会場モード/);
-  assert.match(app, /1時間だけ位置共有する/);
+  assert.match(app, /近くの人を表示/);
+  assert.match(app, /位置情報を共有する（1時間）/);
   assert.match(app, /近くの人<small>Nearby/);
   assert.match(app, /メール連携・変更/);
   assert.match(app, /プロフィール設定/);
@@ -54,6 +54,14 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /navigator\.mediaDevices\.getUserMedia/);
   assert.match(app, /jsQR\(/);
   assert.match(app, /IdentityImages/);
+  assert.match(app, /顔アップと全身を作る/);
+  assert.match(app, /以前のメモを見る/);
+  assert.match(app, /showPreviousMemos/);
+  assert.match(app, /直近のメモ/);
+  assert.ok(app.indexOf('className="portrait-studio"') < app.indexOf('className="memory-notes-panel"'));
+  assert.match(app, /faceSrc=\{portraits\[contact\.contactUserId\]\?\.face\?\.dataUrl\}/);
+  assert.match(app, /fullBodySrc=\{portraits\[contact\.contactUserId\]\?\.fullBody\?\.dataUrl\}/);
+  assert.doesNotMatch(app, /会場モード|この会場にいる間だけ|自分のQRを相手に見せる|このQRを相手に見せる|読み取ると一度だけ自動交換します/);
   assert.doesNotMatch(app, /CAMERALESS CONNECTION|REUNION RADAR|ONE-TIME EXCHANGE|AI IMAGINED PORTRAIT|ORIGINAL NOTES|SHOW & SCAN|MY PROFILE/);
   assert.match(css, /Calm, familiar mobile UI/);
   assert.match(css, /\.bottom-nav[\s\S]*background: rgba\(255, 255, 255, \.97\)/);
@@ -109,12 +117,13 @@ test("restores the same profile from a verified email", async () => {
 });
 
 test("connects faithful structured memory to photorealistic OpenAI image generation", async () => {
-  const [openai, portraitRoute, schema, avatarMigration, portraitMigration, hosting] = await Promise.all([
+  const [openai, portraitRoute, schema, avatarMigration, portraitMigration, portraitPairMigration, hosting] = await Promise.all([
     readFile(new URL("lib/openai.ts", root), "utf8"),
     readFile(new URL("app/api/portrait/route.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("drizzle/0002_flat_christian_walker.sql", root), "utf8"),
     readFile(new URL("drizzle/0004_nostalgic_beyonder.sql", root), "utf8"),
+    readFile(new URL("drizzle/0005_green_praxagora.sql", root), "utf8"),
     readFile(new URL(".openai/hosting.json", root), "utf8"),
   ]);
   assert.match(openai, /gpt-image-2/);
@@ -123,10 +132,13 @@ test("connects faithful structured memory to photorealistic OpenAI image generat
   assert.match(openai, /visualTraits/);
   assert.match(openai, /highly photorealistic/);
   assert.match(openai, /Do not slim, beautify, idealize/);
-  assert.match(openai, /body build is easy to see/);
+  assert.match(openai, /head-to-toe full-body photograph/);
+  assert.match(openai, /tight face close-up portrait/);
+  assert.match(openai, /generateImaginedPortraitPair/);
+  assert.match(openai, /Promise\.all/);
   assert.match(openai, /visualNotesFromMemos/);
   assert.doesNotMatch(openai, /gpt-4o-mini-transcribe/);
-  assert.match(portraitRoute, /generateImaginedPortrait/);
+  assert.match(portraitRoute, /generateImaginedPortraitPair/);
   assert.match(schema, /visual_traits/);
   assert.match(schema, /avatarDataUrl/);
   assert.match(avatarMigration, /avatar_data_url/);
@@ -134,7 +146,9 @@ test("connects faithful structured memory to photorealistic OpenAI image generat
   assert.match(portraitRoute, /media\.put/);
   assert.match(portraitRoute, /saveContactPortrait/);
   assert.match(schema, /portraitKey/);
+  assert.match(schema, /portraitFullBodyKey/);
   assert.match(portraitMigration, /portrait_key/);
+  assert.match(portraitPairMigration, /portrait_full_body_key/);
   assert.match(hosting, /"r2": "MEDIA"/);
 });
 
