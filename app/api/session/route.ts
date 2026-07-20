@@ -54,9 +54,11 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as { name?: string; reading?: string; org?: string; avatarDataUrl?: string };
     const name = payload.name?.trim() || "";
     if (!name) return Response.json({ error: "名前を入力してください。" }, { status: 400 });
+    const reading = payload.reading?.trim() || "";
+    if (!reading) return Response.json({ error: "名前の読み方をローマ字で入力してください。" }, { status: 400 });
     const created = await createUser({
       name,
-      reading: payload.reading?.trim() || "",
+      reading,
       org: payload.org?.trim() || "",
       avatarDataUrl: validateAvatarDataUrl(payload.avatarDataUrl),
       accountEmail: account?.email ?? null,

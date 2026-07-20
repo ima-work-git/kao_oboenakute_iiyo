@@ -12,10 +12,12 @@ export async function PATCH(request: Request) {
     };
     const name = payload.name?.trim() || "";
     if (!name) return Response.json({ error: "名前 / Name を入力してください。" }, { status: 400 });
+    const reading = payload.reading?.trim() || "";
+    if (!reading) return Response.json({ error: "名前の読み方 / Name pronunciation をローマ字で入力してください。" }, { status: 400 });
     const user = await updateUserProfile({
       userId: owner.id,
       name,
-      reading: payload.reading?.trim() || "",
+      reading,
       org: payload.org?.trim() || "",
       avatarDataUrl: validateAvatarDataUrl(payload.avatarDataUrl),
     });

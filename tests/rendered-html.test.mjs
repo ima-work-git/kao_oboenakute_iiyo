@@ -48,7 +48,13 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   assert.match(app, /preferredAppLanguage\(browserLanguages\)/);
   assert.match(i18n, /return "en"/);
   assert.match(app, /LANGUAGE_OPTIONS\.map/);
+  assert.equal((app.match(/name="reading" required/g) ?? []).length, 2);
   assert.equal((app.match(/placeholder=\{t\("profile\.readingPlaceholder"\)\}/g) ?? []).length, 2);
+  assert.equal((app.match(/t\("profile\.readingHelp"\)/g) ?? []).length, 2);
+  assert.match(i18n, /"profile\.reading": "名前の読み方（ローマ字）"/);
+  assert.match(i18n, /言語が違う相手にも名前を読んでもらえるよう、ローマ字で入力してください/);
+  assert.match(app, /href="\/terms" target="_blank"/);
+  assert.match(app, /terms\.consentBefore/);
   assert.match(app, /言語を選択 \/ Choose your language/);
   assert.match(app, /Choose your language for Hello Again/);
   assert.match(app, /returnToTop\(\)/);
@@ -129,6 +135,27 @@ test("builds the multilingual Hello Again mobile experience", async () => {
   await access(new URL("public/hello-again-app-icon.png", root));
   await access(new URL("public/og-hello-again.png", root));
   await access(new URL("dist/server/index.js", root));
+});
+
+test("publishes protective Terms of Use with clear consent", async () => {
+  const [terms, css, app, i18n, sessionRoute, profileRoute] = await Promise.all([
+    readFile(new URL("app/terms/page.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
+    readFile(new URL("app/matane-app.tsx", root), "utf8"),
+    readFile(new URL("app/i18n.ts", root), "utf8"),
+    readFile(new URL("app/api/session/route.ts", root), "utf8"),
+    readFile(new URL("app/api/profile/route.ts", root), "utf8"),
+  ]);
+  assert.match(terms, /第9条（停止・変更・終了）/);
+  assert.match(terms, /第12条（損害賠償責任の制限）/);
+  assert.match(terms, /運営者の故意又は重大な過失により生じた損害には適用しません/);
+  assert.match(terms, /東京地方裁判所又は東京簡易裁判所/);
+  assert.match(terms, /実験的なプロトタイプ/);
+  assert.match(css, /\.terms-document/);
+  assert.match(app, /t\("terms\.link"\)/);
+  assert.match(i18n, /本サービスを利用することで/);
+  assert.match(sessionRoute, /名前の読み方をローマ字で入力してください/);
+  assert.match(profileRoute, /Name pronunciation/);
 });
 
 test("stores private exchange context, nicknames, and a final portrait choice", async () => {
