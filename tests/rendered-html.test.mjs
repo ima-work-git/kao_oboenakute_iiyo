@@ -45,7 +45,12 @@ test("builds the MATANE mobile experience", async () => {
   assert.match(app, /本人の顔を再現・特定するものではありません/);
   assert.match(app, /友達と交換/);
   assert.match(app, /近くの人を表示/);
-  assert.match(app, /位置情報を共有する（1時間）/);
+  assert.match(app, /今いる場所を登録（1時間有効）/);
+  assert.match(app, /移動しても自動更新されず、1時間後に無効になります/);
+  assert.match(app, /リアルタイム追跡はしません/);
+  assert.match(app, /現在地を更新（1時間延長）/);
+  assert.match(app, /登録した場所を解除/);
+  assert.doesNotMatch(app, /navigator\.geolocation\.watchPosition/);
   assert.match(app, /近くの人<small>Nearby/);
   assert.match(app, /150m以内/);
   assert.match(app, /メール連携・変更/);
@@ -96,7 +101,8 @@ test("stores private exchange context, nicknames, and a final portrait choice", 
   assert.match(migration, /ADD `exchanged_at`/);
   assert.match(migration, /ADD `exchange_latitude`/);
   assert.match(exchangeRoute, /exchangeContact\(owner, code, hasPosition/);
-  assert.match(app, /交換した日時と、許可された場合だけおおよその場所/);
+  assert.match(app, /QR読み取り・コード交換の確定時に、その端末の現在地を1回だけ取得します/);
+  assert.match(app, /双方の交換履歴に残ります/);
   assert.match(app, /className="exchange-history"/);
   assert.match(schema, /nickname/);
   assert.match(contactRoute, /updateContactNickname/);

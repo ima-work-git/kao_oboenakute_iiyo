@@ -69,6 +69,7 @@ const SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F";
 const SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F";
 const EMAIL_CHANGE_SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F%3Femail_change%3D1";
 const EMAIL_CHANGE_SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F%3Femail_change%3D1";
+const LOCATION_VALID_MS = 60 * 60 * 1000;
 const PORTRAIT_WAITING_MESSAGES = [
   "メモの特徴を一つずつ絵にしています。少しだけお待ちください。",
   "トイレに篭って待つのも作戦です。戻るころには完成しているかも。",
@@ -130,6 +131,10 @@ function formatExchangeTime(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+function formatLocationExpiry(value: number) {
+  return new Date(value).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
 }
 
 function PersonAvatar({ name, src, className = "", live = false }: { name: string; src: string; className?: string; live?: boolean }) {
@@ -202,7 +207,8 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [locationActive, setLocationActive] = useState(false);
-  const [locationLabel, setLocationLabel] = useState("位置共有はオフです");
+  const [locationLabel, setLocationLabel] = useState("現在地は未登録です");
+  const [locationExpiresAt, setLocationExpiresAt] = useState<number | null>(null);
   const [lastCoordinates, setLastCoordinates] = useState<Coordinates | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
@@ -222,8 +228,6 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   const [portraitWaitingMessage, setPortraitWaitingMessage] = useState<string>(PORTRAIT_WAITING_MESSAGES[0]);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState("カメラを準備しています…");
-  const watchId = useRef<number | null>(null);
-  const lastSentAt = useRef(0);
   const memoTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const autoExchangeRef = useRef("");
   const scannerVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -258,9 +262,16 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       setUser(nextUser);
       setAvatarDraft(nextUser.avatarDataUrl);
       setContacts(body.contacts as Contact[]);
+      const lastSeenAt = nextUser.lastSeen ? Date.parse(nextUser.lastSeen) : Number.NaN;
+      const expiresAt = lastSeenAt + LOCATION_VALID_MS;
+      const locationStillValid = nextUser.locationEnabled && Number.isFinite(expiresAt) && expiresAt > Date.now();
+      setLocationActive(locationStillValid);
+      setLocationExpiresAt(locationStillValid ? expiresAt : null);
+      setLocationLabel(locationStillValid ? `登録地点は${formatLocationExpiry(expiresAt)}まで有効` : "現在地は未登録です");
       if (nextUser.org.includes("JUDGE DEMO")) {
         setLocationActive(true);
-        setLocationLabel("渋谷ソラスタコンファレンスの審査デモ");
+        setLocationExpiresAt(expiresAt);
+        setLocationLabel(`渋谷ソラスタを登録済み（${formatLocationExpiry(expiresAt)}まで）`);
         setTab("nearby");
       }
       if (body.restoredByEmail) setToast("メールからプロフィールを復元しました。 / Profile restored.");
@@ -270,7 +281,6 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   );
 
   const getExchangePosition = useCallback(async () => {
-    if (lastCoordinates) return lastCoordinates;
     if (!navigator.geolocation) return null;
     return new Promise<Coordinates | null>((resolve) => {
       navigator.geolocation.getCurrentPosition(
@@ -284,10 +294,10 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
           resolve(coordinates);
         },
         () => resolve(null),
-        { enableHighAccuracy: false, timeout: 6_000, maximumAge: 300_000 }
+        { enableHighAccuracy: false, timeout: 6_000, maximumAge: 30_000 }
       );
     });
-  }, [lastCoordinates]);
+  }, []);
 
   const performExchange = useCallback(async (code: string, explicitToken?: string) => {
     const position = await getExchangePosition();
@@ -502,15 +512,16 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
   }, [portraitBusyId]);
 
   const postLocation = useCallback(
-    async (coords: Coordinates, force = false) => {
-      if (!force && Date.now() - lastSentAt.current < 20_000) return;
-      lastSentAt.current = Date.now();
+    async (coords: Coordinates) => {
       const body = await api("/api/location", {
         method: "POST",
         body: JSON.stringify({ ...coords, enabled: true }),
       });
       setContacts(body.contacts as Contact[]);
-      setLocationLabel(`更新 ${new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`);
+      const expiresAt = Date.now() + LOCATION_VALID_MS;
+      setLocationActive(true);
+      setLocationExpiresAt(expiresAt);
+      setLocationLabel(`登録地点は${formatLocationExpiry(expiresAt)}まで有効`);
     },
     [api]
   );
@@ -523,9 +534,10 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         accuracy: position.coords.accuracy,
       };
       setLastCoordinates(coords);
-      setLocationActive(true);
-      setLocationLabel(`位置精度 約${Math.round(coords.accuracy)}m`);
-      postLocation(coords).catch((error: Error) => setToast(error.message));
+      setLocationLabel("現在地を登録しています…");
+      postLocation(coords)
+        .then(() => setToast(`現在地を登録しました。精度は約${Math.round(coords.accuracy)}mです。`))
+        .catch((error: Error) => setToast(error.message));
     },
     [postLocation]
   );
@@ -537,20 +549,15 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     }
     setLocationLabel("位置情報を確認中…");
     navigator.geolocation.getCurrentPosition(onPosition, () => {
-      setLocationLabel("位置情報を許可してください");
-      setToast("位置情報が使えません。体験モードでも試せます。");
+      setLocationLabel("現在地を登録できませんでした");
+      setToast("位置情報を許可すると、押した時点の現在地を登録できます。");
     }, { enableHighAccuracy: false, timeout: 12_000, maximumAge: 30_000 });
-    if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
-    watchId.current = navigator.geolocation.watchPosition(onPosition, () => {
-      setLocationLabel("位置更新を待っています");
-    }, { enableHighAccuracy: false, timeout: 20_000, maximumAge: 30_000 });
   }, [onPosition]);
 
   const disableLocation = useCallback(async () => {
-    if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
-    watchId.current = null;
     setLocationActive(false);
-    setLocationLabel("位置共有はオフです");
+    setLocationExpiresAt(null);
+    setLocationLabel("現在地は未登録です");
     try {
       const body = await api("/api/location", {
         method: "POST",
@@ -558,7 +565,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       });
       setContacts(body.contacts as Contact[]);
     } catch (error) {
-      setToast(error instanceof Error ? error.message : "位置共有を停止できませんでした。");
+      setToast(error instanceof Error ? error.message : "現在地の登録を解除できませんでした。");
     }
   }, [api]);
 
@@ -571,23 +578,24 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
     }, 15_000);
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
-      if (reviewerMode) {
-        api("/api/nearby").then((body) => setContacts(body.contacts as Contact[])).catch(() => undefined);
-        return;
-      }
-      if (lastCoordinates) postLocation(lastCoordinates, true).catch(() => undefined);
-      else enableLocation();
+      api("/api/nearby").then((body) => setContacts(body.contacts as Contact[])).catch(() => undefined);
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [api, enableLocation, lastCoordinates, locationActive, postLocation, reviewerMode, token]);
+  }, [api, locationActive, token]);
 
-  useEffect(() => () => {
-    if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
-  }, []);
+  useEffect(() => {
+    if (!locationActive || locationExpiresAt == null) return;
+    const timer = window.setTimeout(() => {
+      setLocationActive(false);
+      setLocationExpiresAt(null);
+      setLocationLabel("登録した現在地の有効期限が切れました");
+    }, Math.max(0, locationExpiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [locationActive, locationExpiresAt]);
 
   const nearbyContacts = useMemo(
     () => contacts.filter((contact) => contact.nearby).sort((a, b) => {
@@ -937,7 +945,9 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
       });
       setContacts(body.contacts as Contact[]);
       setLocationActive(true);
-      setLocationLabel(lastCoordinates ? "現在地で体験中" : "東京駅付近の体験モード");
+      const expiresAt = Date.now() + LOCATION_VALID_MS;
+      setLocationExpiresAt(expiresAt);
+      setLocationLabel(`${lastCoordinates ? "現在地" : "東京駅付近"}を登録済み（${formatLocationExpiry(expiresAt)}まで）`);
       setToast("近くにいる2人を追加しました");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "体験モードを開始できませんでした。");
@@ -1053,7 +1063,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         </div>
         <div className="header-actions">
           <button className={`status-pill ${locationActive ? "is-live" : ""}`} onClick={locationActive ? disableLocation : enableLocation}>
-            <span /> {locationActive ? "位置共有中" : "位置共有OFF"}
+            <span /> {locationActive ? "現在地登録中" : "現在地未登録"}
           </button>
           <button
             className={`menu-button ${menuOpen ? "is-open" : ""}`}
@@ -1078,12 +1088,15 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
             )}
             <div className="hero-panel">
               <h1>近くの人を表示 <small>People nearby</small></h1>
-              <p>{locationActive ? `${nearbyContacts.length}人が150m以内にいます。${locationLabel}` : "位置情報を1時間だけ共有すると、150m以内にいる交換済みの友達を表示します。正確な場所は相手に表示されません。"}</p>
-              <button className="radar-button" onClick={locationActive ? disableLocation : enableLocation}>
+              <p>{locationActive
+                ? `${nearbyContacts.length}人が登録地点から150m以内にいます。${locationLabel}。移動した場合は現在地を更新してください。`
+                : "ボタンを押した時点の現在地を1回だけ登録します。移動しても自動更新されず、1時間後に無効になります。友達も現在地を登録していて、約150m以内なら表示されます。"}</p>
+              <button className="radar-button" onClick={enableLocation}>
                 <span className="location-mark" aria-hidden="true">⌖</span>
-                <strong>{locationActive ? "位置共有を止める" : "位置情報を共有する（1時間）"}</strong>
-                <small>{locationActive ? "別タブ中は更新が遅くなる場合があります" : "位置情報の許可が必要です"}</small>
+                <strong>{locationActive ? "現在地を更新（1時間延長）" : "今いる場所を登録（1時間有効）"}</strong>
+                <small>{locationActive ? "押した時点の場所で上書きします" : "リアルタイム追跡はしません"}</small>
               </button>
+              {locationActive && <button type="button" className="location-remove-button" onClick={disableLocation}>登録した場所を解除</button>}
             </div>
 
             <div className="section-heading">
@@ -1113,13 +1126,13 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
               </div>
             ) : (
               <div className="empty-state">
-                <h3>{locationActive ? "友達を探しています / Searching…" : "探索を始めると、ここに表示されます"}</h3>
+                <h3>{locationActive ? "友達を探しています / Searching…" : "現在地を登録すると、ここに表示されます"}</h3>
                 <p>実機が1台でも、体験モードで再会通知を試せます。 / Try with one phone.</p>
                 <button className="secondary-button" onClick={addDemo} disabled={busy}>{busy ? "準備中…" : "30秒で体験 / Try demo"}</button>
               </div>
             )}
 
-            <p className="privacy-strip">反応範囲は約150m。交換していない人は表示されず、位置情報は1時間で自動的に切れます。<br /><small>About 150m. Only exchanged friends appear; location expires in one hour.</small></p>
+            <p className="privacy-strip">現在地は登録ボタンを押したときに1回だけ取得し、リアルタイム追跡しません。登録から1時間で無効になります。正確な場所は友達に表示しません。<br /><small>One location snapshot; no live tracking. It expires after one hour.</small></p>
           </section>
         )}
 
@@ -1279,7 +1292,7 @@ export function MataneApp({ account }: { account: AccountIdentity | null }) {
         {tab === "exchange" && (
           <section className="screen exchange-screen">
             <div className="screen-intro"><h1>友達と交換 <small>Exchange</small></h1></div>
-            <p className="exchange-record-note">交換した日時と、許可された場合だけおおよその場所を自分用に記録します。相手には共有しません。<br /><small>Time and approximate location are saved privately when permitted.</small></p>
+            <p className="exchange-record-note">QR読み取り・コード交換の確定時に、その端末の現在地を1回だけ取得します。位置情報を許可した場合だけ、交換日時とおおよその場所が双方の交換履歴に残ります。<br /><small>At exchange, one location snapshot is saved to both histories only with permission.</small></p>
             <button type="button" className="camera-scan-button" onClick={beginScanner} disabled={busy}>
               <span aria-hidden="true">▣</span>
               <span><strong>カメラで相手のQRを読む</strong><small>Scan their QR code</small></span>

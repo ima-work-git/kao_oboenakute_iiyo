@@ -1098,3 +1098,16 @@ body {
 .exchange-record-note { margin: -8px 2px 0; border-left: 3px solid #87a696; padding: 7px 10px; color: #58645e; font-size: 10px; line-height: 1.5; }
 .exchange-record-note small { color: #7d8782; font-size: 8px; }
 .nav-friends { font-family: system-ui, sans-serif; font-size: 18px !important; line-height: 1; filter: grayscale(1); }
+.location-remove-button {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 38px;
+  margin-top: 8px;
+  border: 1px solid #c8cfca;
+  border-radius: 10px;
+  background: white;
+  color: #68736d;
+  font-size: 10px;
+  font-weight: 700;
+}
