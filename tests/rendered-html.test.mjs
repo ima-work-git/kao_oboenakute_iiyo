@@ -160,7 +160,12 @@ test("publishes bilingual policies and requires versioned explicit consent", asy
   assert.match(app, /href="\/privacy"/);
   assert.match(i18n, /利用前の確認/);
   assert.match(i18n, /実写風の架空イメージ生成/);
-  assert.match(policy, /CURRENT_POLICY_VERSION = "2026-07-21"/);
+  assert.match(i18n, /交換した相手が、Hello Againの記憶支援機能に必要な範囲で/);
+  assert.match(i18n, /I also permit people I exchange with/);
+  assert.doesNotMatch(i18n, /権限または許可がある場合だけ入力します|only when I have authority or permission/);
+  assert.match(terms, /Mutual permission between exchanged users/);
+  assert.match(privacy, /交換相手との相互許可・制限/);
+  assert.match(policy, /CURRENT_POLICY_VERSION = "2026-07-21\.2"/);
   assert.match(sessionRoute, /hasCurrentPolicyConsent/);
   assert.match(consentRoute, /acceptCurrentPolicies/);
   assert.match(migration, /image_consent_accepted_at/);

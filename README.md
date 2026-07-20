@@ -134,7 +134,7 @@ Key files:
 - AI structure is hidden; the editable original note remains the source of truth.
 - Generated portraits are fictional and are not evidence of a person's real appearance.
 - First use requires separate, explicit acceptance of the [Terms of Use](https://matane-reunion-2026.fumiyaa.chatgpt.site/terms), [Privacy Policy](https://matane-reunion-2026.fumiyaa.chatgpt.site/privacy), and OpenAI processing for photorealistic fictional memory images.
-- Users may enter another person’s information only with lawful authority or permission.
+- By exchanging profiles, each user permits exchanged contacts to process their shared profile and private memory notes only within Hello Again’s intended memory-support features. Sensitive, unlawful, rights-infringing, or public use remains prohibited.
 - AI does not evaluate danger, trustworthiness, personality, or social value; caution flags are manual and private.
 - Settings includes permanent deletion of the profile, exchange data, private notes, and saved portraits.
 

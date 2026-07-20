@@ -20,7 +20,7 @@ The working submission requires only a smartphone browser. It does not require a
 2. Before any login, guest mode, or judge demo, the user must explicitly check and accept:
    - the Terms of Use;
    - the Privacy Policy and personal-data handling; and
-   - sending written appearance notes to OpenAI for photorealistic fictional memory-image generation, plus responsibility to enter another person’s data only with lawful authority or permission.
+   - sending written appearance notes to OpenAI for photorealistic fictional memory-image generation, plus permission for exchanged contacts to process the user’s shared profile and private memory notes only within Hello Again’s intended memory-support features.
 3. Consent is versioned and recorded locally. When a profile exists, the current consent version and timestamps are also stored in D1. Existing profiles must consent to the current version before using the app.
 
 ### Profile and account
@@ -116,7 +116,7 @@ Cloudflare Worker API (vinext)
 - No map or exact coordinates exposed to friends.
 - No shared blacklist; notes, nicknames, portraits, and caution flags are private.
 - Explicit, versioned first-use consent for Terms, Privacy Policy, and AI image processing.
-- Another person’s data may be entered only with lawful authority or permission.
+- By exchanging profiles, each user permits exchanged contacts to process their shared profile and private memory notes only within Hello Again’s intended memory-support features. This does not permit sensitive, unlawful, rights-infringing, or public use.
 - AI output is not evidence of identity or actual appearance.
 
 ## 8. Future native app and smart glasses

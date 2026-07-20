@@ -1,4 +1,4 @@
-export const CURRENT_POLICY_VERSION = "2026-07-21";
+export const CURRENT_POLICY_VERSION = "2026-07-21.2";
 
 export type PolicyConsent = {
   policyVersion?: string;

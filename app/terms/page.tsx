@@ -10,7 +10,7 @@ const englishSections = [
   { title: "1. Scope and explicit consent", paragraphs: ["These Terms govern use of Hello Again, an experimental hackathon prototype operated by its individual creator. Before using the service, you must actively confirm the Terms, Privacy Policy, and AI image consent. If you do not agree, do not use the service."] },
   { title: "2. Experimental service", paragraphs: ["The service may change, be restricted, lose data, or end at any time. It is not for emergency contact, identity verification, medical, employment, credit, safety, or other high-impact decisions."] },
   { title: "3. Accounts and submitted information", paragraphs: ["You must provide lawful, accurate information and protect your device, email, session, and exchange code. You are responsible for information submitted through your account."] },
-  { title: "4. Other people’s data", paragraphs: ["Enter another person’s profile, notes, location-related information, or appearance only when you have lawful authority or permission to record and process it. Do not enter sensitive, secret, unlawfully obtained, or rights-infringing information."] },
+  { title: "4. Mutual permission between exchanged users", paragraphs: ["By exchanging with another user, you permit that exchanged user to record and process the profile information you share and private notes about you only as needed for Hello Again’s memory-support features. This permission does not authorize publication, surveillance, harassment, discrimination, sensitive or unlawfully obtained information, rights infringement, or use outside the service’s intended features."] },
   { title: "5. Location", paragraphs: ["Location is collected only when you invoke a relevant action and allow browser access. It is a one-time snapshot, not continuous tracking. Nearby results can be inaccurate or delayed, and must not be treated as a safety or identity signal."] },
   { title: "6. AI-generated output", paragraphs: ["OpenAI models may structure explicit notes and generate photorealistic fictional memory images from written descriptions. No real photograph is used as the generation input. Output may be inaccurate, biased, inappropriate, or resemble someone by coincidence; it does not identify or reconstruct the person.", "AI does not classify whether a person is dangerous, trustworthy, desirable, or a caution person. Any private caution flag is solely the user’s manual choice. Never use output for identification, publication, surveillance, harassment, discrimination, or decisions that affect a person."] },
   { title: "7. User content license", paragraphs: ["You retain rights you lawfully hold. You grant the operator a non-exclusive, royalty-free license to store, display, transform, transmit to disclosed processors, troubleshoot, and otherwise use content only as needed to provide and secure the service."] },
@@ -51,14 +51,15 @@ const sections = [
     paragraphs: [
       "本サービスは、プロフィール、アイコン、名前の読み方、所属、交換履歴、メモ、位置情報その他の情報を、機能提供に必要な範囲で取り扱います。利用者は、登録する情報の内容及び共有のタイミングを自ら判断するものとします。",
       "位置情報は、利用者が該当する操作を行い、端末で許可した場合にのみ取得されます。位置情報、距離及び近接判定には、端末、通信、建物その他の事情による誤差や遅延が生じることがあります。",
-      "利用者は、第三者の情報を記録・処理する正当な権限または許可がある場合だけ登録できます。機密情報、要配慮情報、違法に取得した情報を登録してはなりません。",
+      "利用者は、他の利用者と交換することにより、交換相手が、本サービスの記憶支援機能に必要な範囲で、当該利用者が共有したプロフィール情報及び当該利用者に関する非公開メモを記録・処理することを許可します。",
+      "この許可は、情報の公開、監視、嫌がらせ、差別、要配慮情報又は違法に取得した情報の登録、権利侵害、本サービスの本来の機能を超える利用を認めるものではありません。",
     ],
   },
   {
     title: "第5条（利用者コンテンツ）",
     paragraphs: [
       "利用者が登録した文章、画像、メモその他のコンテンツに関する権利は、利用者又は正当な権利者に留保されます。利用者は、運営者に対し、本サービスの提供、保存、表示、変換、障害対応及び改善に必要な範囲で、当該コンテンツを無償かつ非独占的に利用する権利を許諾します。",
-      "利用者は、自ら登録するコンテンツについて必要な権利又は許諾を有することを保証し、第三者の肖像権、プライバシー、著作権、商標権その他の権利を侵害しないものとします。",
+      "利用者は、自ら登録するコンテンツにより、第三者の肖像権、プライバシー、著作権、商標権その他の権利を侵害しないものとします。",
     ],
   },
   {
